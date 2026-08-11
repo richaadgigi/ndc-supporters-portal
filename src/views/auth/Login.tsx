@@ -12,7 +12,7 @@ import type { SupportGroup } from '../../services/supportGroups.service';
 import { Alert, showAlert } from '../../components/common';
 import { extractErrorMessage } from '../../utils/formatters';
 
-type LoginType = 'admin' | 'portal' | 'member';
+type LoginType = 'portal' | 'member';
 
 interface LoginFormData {
   email: string;
@@ -71,11 +71,9 @@ const Login = () => {
         remember_me: data.remember_me,
         ...(loginType === 'member' && { support_group_unique_id: data.support_group_unique_id }),
       };
-      const response = loginType === 'admin'
-        ? await authService.login(payload)
-        : loginType === 'portal'
-          ? await authService.portalLogin(payload)
-          : await authService.memberLogin(payload);
+      const response = loginType === 'portal'
+        ? await authService.portalLogin(payload)
+        : await authService.memberLogin(payload);
 
       if (response.success && response.data) {
         const { token, fullname, email, profile_image, acls, support_group_unique_id } = response.data;
@@ -83,7 +81,7 @@ const Login = () => {
         setSuccessMessage('Login successful! Redirecting...');
         showAlert('success-alert');
         setTimeout(() => {
-          login(token, { fullname, email, profile_image }, acls ?? [], groupId, data.remember_me, loginType === 'admin' ? 'admin' : 'portal');
+          login(token, { fullname, email, profile_image }, acls ?? [], groupId, data.remember_me, 'portal');
           router.push('/dashboard');
         }, 1500);
       } else if (response.success && !response.data) {
@@ -121,11 +119,9 @@ const Login = () => {
         remember_me: rememberMe,
         ...(loginType === 'member' && { support_group_unique_id: otpGroupId }),
       };
-      const response = loginType === 'admin'
-        ? await authService.verifyOtp(payload)
-        : loginType === 'portal'
-          ? await authService.verifySupportGroupOtp(payload)
-          : await authService.verifySupportGroupMemberOtp(payload);
+      const response = loginType === 'portal'
+        ? await authService.verifySupportGroupOtp(payload)
+        : await authService.verifySupportGroupMemberOtp(payload);
 
       if (response.success && response.data) {
         const { token, fullname, email, profile_image, acls, support_group_unique_id } = response.data;
@@ -133,7 +129,7 @@ const Login = () => {
         setSuccessMessage('OTP verified! Redirecting...');
         showAlert('success-alert');
         setTimeout(() => {
-          login(token, { fullname, email, profile_image }, acls ?? [], groupId, rememberMe, loginType === 'admin' ? 'admin' : 'portal');
+          login(token, { fullname, email, profile_image }, acls ?? [], groupId, rememberMe, 'portal');
           router.push('/dashboard');
         }, 1500);
       } else {
@@ -219,7 +215,7 @@ const Login = () => {
                 gap: '4px',
               }}
             >
-              {(['admin', 'portal', 'member'] as LoginType[]).map((type) => (
+              {(['portal', 'member'] as LoginType[]).map((type) => (
                 <button
                   key={type}
                   type="button"
@@ -235,7 +231,7 @@ const Login = () => {
                     transition: 'all 0.15s',
                   }}
                 >
-                  {type === 'admin' ? 'Administrator' : type === 'portal' ? 'Group Leader' : 'Group Member'}
+                  {type === 'portal' ? 'Group Leader' : 'Group Member'}
                 </button>
               ))}
             </div>
