@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const TARGET = (process.env.NEXT_PUBLIC_ALT_API_URL ?? 'https://ndcaltapi.xnyder.com').replace(/\/+$/, '');
+const TARGET = (process.env.ALT_API_URL ?? 'https://ndcaltapi.xnyder.com').replace(/\/+$/, '');
 
 async function handler(req: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;

@@ -12,8 +12,6 @@ import type { SupportGroup } from '../../services/supportGroups.service';
 import { Alert, showAlert } from '../../components/common';
 import { extractErrorMessage } from '../../utils/formatters';
 
-type LoginType = 'portal' | 'member';
-
 interface LoginFormData {
   email: string;
   password: string;
@@ -24,7 +22,6 @@ interface LoginFormData {
 const Login = () => {
   const router = useRouter();
   const { login } = useGeneral();
-  const [loginType, setLoginType] = useState<LoginType>('portal');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -39,28 +36,17 @@ const Login = () => {
   const [otpGroupId, setOtpGroupId] = useState('');
 
   useEffect(() => {
-    if (loginType !== 'member' || supportGroups.length > 0) return;
+    if (supportGroups.length > 0) return;
     supportGroupsService.publicGetAll({ size: 500 })
       .then(res => { if (res.success && res.data) setSupportGroups(Array.isArray(res.data) ? res.data : (res.data as any).rows || []); })
       .catch(() => {});
-  }, [loginType]);
+  }, [supportGroups.length]);
 
   const {
     register,
     handleSubmit,
-    reset,
     formState: { errors },
   } = useForm<LoginFormData>({ defaultValues: { remember_me: false } });
-
-  const handleTypeSwitch = (type: LoginType) => {
-    setLoginType(type);
-    reset();
-    setOtpRequired(false);
-    setOtp('');
-    setOtpEmail('');
-    setIsLoading(false);
-    setVerifyingOtp(false);
-  };
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
@@ -69,11 +55,9 @@ const Login = () => {
         email: data.email,
         password: data.password,
         remember_me: data.remember_me,
-        ...(loginType === 'member' && { support_group_unique_id: data.support_group_unique_id }),
+        support_group_unique_id: data.support_group_unique_id,
       };
-      const response = loginType === 'portal'
-        ? await authService.portalLogin(payload)
-        : await authService.memberLogin(payload);
+      const response = await authService.memberLogin(payload);
 
       if (response.success && response.data) {
         const { token, fullname, email, profile_image, acls, support_group_unique_id } = response.data;
@@ -117,11 +101,9 @@ const Login = () => {
         email: otpEmail,
         otp,
         remember_me: rememberMe,
-        ...(loginType === 'member' && { support_group_unique_id: otpGroupId }),
+        support_group_unique_id: otpGroupId,
       };
-      const response = loginType === 'portal'
-        ? await authService.verifySupportGroupOtp(payload)
-        : await authService.verifySupportGroupMemberOtp(payload);
+      const response = await authService.verifySupportGroupMemberOtp(payload);
 
       if (response.success && response.data) {
         const { token, fullname, email, profile_image, acls, support_group_unique_id } = response.data;
@@ -206,56 +188,24 @@ const Login = () => {
               <span className="xui-opacity-4">Welcome to {APP_NAME}</span>
             </p>
 
-            <div
-              className="xui-d-flex xui-flex-ai-center xui-mb-1-half"
-              style={{
-                background: 'var(--neutral-100)',
-                borderRadius: '10px',
-                padding: '4px',
-                gap: '4px',
-              }}
-            >
-              {(['portal', 'member'] as LoginType[]).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => handleTypeSwitch(type)}
-                  className="xui-btn xui-btn-block xui-font-sz-[11px] xui-font-w-600"
-                  style={{
-                    borderRadius: '8px',
-                    padding: '8px 6px',
-                    background: loginType === type ? '#fff' : 'transparent',
-                    color: loginType === type ? 'var(--primary-600)' : 'var(--neutral-500)',
-                    border: 'none',
-                    boxShadow: loginType === type ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {type === 'portal' ? 'Group Leader' : 'Group Member'}
-                </button>
-              ))}
-            </div>
-
             <form onSubmit={handleSubmit(onSubmit)} className="xui-form">
-              {loginType === 'member' && (
-                <div className="xui-form-box">
-                  <label htmlFor="support_group_unique_id">Support Group</label>
-                  <select
-                    id="support_group_unique_id"
-                    {...register('support_group_unique_id', { required: loginType === 'member' ? 'Select your support group' : false })}
-                  >
-                    <option value="">Select your support group</option>
-                    {supportGroups.map((g) => (
-                      <option key={g.unique_id} value={g.unique_id}>
-                        {g.name}{g.state ? ` - ${g.state}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.support_group_unique_id && (
-                    <span className="xui-font-sz-80 xui-text-red">{errors.support_group_unique_id.message}</span>
-                  )}
-                </div>
-              )}
+              <div className="xui-form-box">
+                <label htmlFor="support_group_unique_id">Support Group</label>
+                <select
+                  id="support_group_unique_id"
+                  {...register('support_group_unique_id', { required: 'Select your support group' })}
+                >
+                  <option value="">Select your support group</option>
+                  {supportGroups.map((g) => (
+                    <option key={g.unique_id} value={g.unique_id}>
+                      {g.name}{g.state ? ` - ${g.state}` : ''}
+                    </option>
+                  ))}
+                </select>
+                {errors.support_group_unique_id && (
+                  <span className="xui-font-sz-80 xui-text-red">{errors.support_group_unique_id.message}</span>
+                )}
+              </div>
 
               <div className="xui-form-box">
                 <label htmlFor="email">Email</label>
@@ -316,12 +266,10 @@ const Login = () => {
                 </button>
               </div>
 
-              {loginType === 'member' && (
-                <p className="xui-font-sz-[13px] xui-text-center">
-                  <span className="xui-opacity-5">Don&apos;t have an account? </span>
-                  <Link href="/signup" style={{ color: 'var(--primary-600)' }}>Sign up</Link>
-                </p>
-              )}
+              <p className="xui-font-sz-[13px] xui-text-center">
+                <span className="xui-opacity-5">Don&apos;t have an account? </span>
+                <Link href="/signup" style={{ color: 'var(--primary-600)' }}>Sign up</Link>
+              </p>
             </form>
           </>
         )}
