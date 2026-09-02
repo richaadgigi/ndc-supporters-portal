@@ -113,6 +113,7 @@ export const GeneralProvider = ({ children }: GeneralProviderProps) => {
       elevated_role: a.elevated_role,
       Module: a.Module ? { stripped: a.Module.stripped, name: a.Module.name } : null,
       SubModule: a.SubModule ? { stripped: a.SubModule.stripped, name: a.SubModule.name } : null,
+      Role: a.Role ? { name: a.Role.name, stripped: a.Role.stripped } : null,
     }));
 
     Cookies.set('ndc-supporter-token', newToken, cookieOptions);

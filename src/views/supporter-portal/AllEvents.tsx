@@ -65,6 +65,7 @@ const AllEvents = () => {
   const canAdd = access.accessTypes.includes('add');
   const canEdit = access.accessTypes.includes('edit');
   const canDelete = access.accessTypes.includes('delete');
+  const canExport = access.accessTypes.includes('elevated_role');
 
   const todayKey = toKey(new Date());
   const calendarDays = useMemo(() => getCalendarDays(month.y, month.m), [month.y, month.m]);
@@ -162,10 +163,12 @@ const AllEvents = () => {
             </h2>
           </div>
           <div className="xui-d-flex xui-flex-ai-center xui-grid-gap-half">
-            <button onClick={() => modalShow('export-modal')} className="xui-btn xui-btn-text xui-font-sz-80 xui-bdr-rad-half xui-font-w-500 xui-d-flex xui-flex-ai-center xui-grid-gap-half"
+            {canExport && (
+              <button onClick={() => modalShow('export-modal')} className="xui-btn xui-btn-text xui-font-sz-80 xui-bdr-rad-half xui-font-w-500 xui-d-flex xui-flex-ai-center xui-grid-gap-half"
               style={{ border: '1px solid var(--neutral-300)', color: 'var(--neutral-700)' }} disabled={loading || items.length === 0}>
               <span className="icon-container"><Download size={16} /></span> Export
             </button>
+            )}
             <button onClick={fetchItems} className="xui-btn xui-btn-text xui-font-sz-80 xui-bdr-rad-half xui-font-w-500 xui-d-flex xui-flex-ai-center xui-grid-gap-half"
               style={{ border: '1px solid var(--neutral-300)', color: 'var(--neutral-700)' }} disabled={loading}>
               <span className="icon-container"><Renew size={16} /></span> Refresh

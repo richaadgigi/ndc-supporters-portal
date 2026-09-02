@@ -19,6 +19,12 @@ export interface SignupPayload {
   confirmPassword: string;
   nin?: string;
   code?: string;
+  country?: string;
+  zone?: string;
+  state?: string;
+  lga?: string;
+  ward?: string;
+  constituency?: string;
 }
 
 export interface SignupResponse {

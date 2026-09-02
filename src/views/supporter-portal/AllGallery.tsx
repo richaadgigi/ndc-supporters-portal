@@ -36,6 +36,7 @@ const AllGallery = () => {
   const accessResult = moduleId ? checkAccess(moduleId, subModuleId) : { hasAccess: false, accessTypes: [] };
   const canAdd = accessResult.accessTypes.includes('add');
   const canDelete = accessResult.accessTypes.includes('delete');
+  const canExport = accessResult.accessTypes.includes('elevated_role');
 
   const handleResponse = (response: any) => {
     if (response.success && response.data) {
@@ -107,9 +108,11 @@ const AllGallery = () => {
             <FilterModal id="gallery" fields={filterFields} values={filterValues} onApply={handleApplyFilters} onClear={handleClearFilters} />
           </div>
           <div className="xui-d-flex xui-flex-ai-center xui-grid-gap-half">
-            <button onClick={() => modalShow('export-modal')} className="xui-btn xui-btn-text xui-font-sz-80 xui-bdr-rad-half xui-font-w-500 xui-d-flex xui-flex-ai-center xui-grid-gap-half" style={{ border: '1px solid var(--neutral-300)', color: 'var(--neutral-700)' }} disabled={loading || items.length === 0}>
+            {canExport && (
+              <button onClick={() => modalShow('export-modal')} className="xui-btn xui-btn-text xui-font-sz-80 xui-bdr-rad-half xui-font-w-500 xui-d-flex xui-flex-ai-center xui-grid-gap-half" style={{ border: '1px solid var(--neutral-300)', color: 'var(--neutral-700)' }} disabled={loading || items.length === 0}>
               <span className="icon-container"><Download size={16} /></span> Export
             </button>
+            )}
             <button onClick={handleRefresh} className="xui-btn xui-btn-text xui-font-sz-80 xui-bdr-rad-half xui-font-w-500 xui-d-flex xui-flex-ai-center xui-grid-gap-half" style={{ border: '1px solid var(--neutral-300)', color: 'var(--neutral-700)' }} disabled={loading}>
               <span className="icon-container"><Renew size={16} /></span> Refresh
             </button>

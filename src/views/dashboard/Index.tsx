@@ -1,368 +1,153 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
-import Chart from 'react-apexcharts';
+import { useState, useEffect } from 'react';
 import { Navbar } from '../../components/layout';
-import { MetricCard, QuickActions } from '../../components/overview';
-import {
-  UserMultiple, Trophy, Person, Checkmark, GroupPresentation,
-} from '@carbon/icons-react';
+import { QuickActions } from '../../components/overview';
 import { useGeneral } from '../../context/GeneralContext';
-import analyticsService from '../../services/analytics.service';
-import type {
-  AdministrationStats,
-  SupporterStats,
-  ApprovalStats,
-  SupportGroupPortalStats,
-} from '../../services/analytics.service';
-import { OverviewSkeleton } from '../../components/skeletons';
-import { Bullhorn, Category, EventSchedule, Image as ImageIcon, Blog, Help, View, Timer } from '@carbon/icons-react';
+import membersService from '../../services/members.service';
+import type { Member } from '../../services/members.service';
+import { APP_NAME } from '../../Globals';
+import { formatDate } from '../../utils/formatters';
+import { DetailSkeleton } from '../../components/skeletons';
 
-const CHART_COLORS = ['#009A49', '#111827', '#009A49', '#111827', '#29AA66', '#111827', '#007E3C', '#5CBE8B'];
+const Field = ({ label, value }: { label: string; value: React.ReactNode }) => (
+  <div>
+    <p className="xui-font-sz-80 xui-opacity-5" style={{ margin: '0 0 4px' }}>{label}</p>
+    <p className="xui-font-sz-90 xui-font-w-500" style={{ margin: 0 }}>
+      {value !== null && value !== undefined && value !== '' ? value : <span className="xui-opacity-4">Not set</span>}
+    </p>
+  </div>
+);
+
+const cardClass = 'xui-bg-white xui-bdr-rad-half xui-p-2 xui-mb-2';
+const cardStyle: React.CSSProperties = { border: '1px solid var(--neutral-200)' };
 
 const Dashboard = () => {
-  const { user, acls, getAccessIds, userType } = useGeneral();
-  const [adminStats, setAdminStats] = useState<AdministrationStats | null>(null);
-  const [supporterStats, setSupporterStats] = useState<SupporterStats | null>(null);
-  const [approvalStats, setApprovalStats] = useState<ApprovalStats | null>(null);
-  const [portalStats, setPortalStats] = useState<SupportGroupPortalStats | null>(null);
+  const { user, acls } = useGeneral();
+  const [profile, setProfile] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const userRole = acls[0]?.Role?.name || 'User';
-  const generalModuleId = acls[0]?.module_unique_id;
+  const roleName = profile?.MemberRole?.name || acls[0]?.Role?.name || '';
 
-  const adminIds = useMemo(() => getAccessIds('administration', 'administration-overview'), [acls]);
-  const supporterIds = useMemo(() => getAccessIds('supporter', 'supporter-overview'), [acls]);
-  const approvalIds = useMemo(() => getAccessIds('approvals', 'approvals-overview'), [acls]);
-  const portalIds = useMemo(() => getAccessIds('supporter-portal', 'supporter-portal-overview'), [acls]);
+  const statesCovered = profile?.SupportGroup?.states_covered ?? [];
+  const coverage = statesCovered.length === 0
+    ? ''
+    : statesCovered.length <= 5
+      ? statesCovered.join(', ')
+      : `${statesCovered.length} states covered`;
 
   useEffect(() => {
-    if (!generalModuleId) { setLoading(false); return; }
+    membersService.portalGetProfile()
+      .then(res => { if (res.success && res.data) setProfile(res.data); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
-    let cancelled = false;
+  const fullName = profile?.User
+    ? [profile.User.firstname, profile.User.middlename, profile.User.lastname].filter(Boolean).join(' ')
+    : user?.fullname || 'Member';
 
-    const promises = [];
-
-    if (userType === 'portal' && portalIds) {
-      promises.push(
-        analyticsService.getPortalSupportGroupPortalStats({ module_unique_id: portalIds.module_unique_id, sub_module_unique_id: portalIds.sub_module_unique_id })
-          .then(res => { if (!cancelled && res.success && res.data) setPortalStats(res.data); })
-          .catch(err => console.error('Failed to load portal stats:', err))
-      );
-    }
-
-    Promise.all(promises).finally(() => { if (!cancelled) setLoading(false); });
-
-    return () => { cancelled = true; };
-  }, [generalModuleId, portalIds, userType]);
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'approved': return '#009A49';
-      case 'denied': return '#111827';
-      case 'pending': return '#111827';
-      default: return '#29AA66';
-    }
-  };
+  const initials = (profile?.User
+    ? `${profile.User.firstname?.charAt(0) || ''}${profile.User.lastname?.charAt(0) || ''}`
+    : (user?.fullname || 'M').charAt(0)).toUpperCase();
 
   return (
     <div>
       <Navbar title="Dashboard" />
 
       <div className="xui-py-1-half">
-        <div className="xui-mb-2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--neutral-900)', margin: 0 }}>
-              Welcome back, {user?.fullname?.split(' ')[0] || 'User'}
-            </h2>
-            <p style={{ fontSize: '14px', color: 'var(--neutral-500)', margin: '4px 0 0' }}>
-              Here's an overview of the supporter network.
-            </p>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="dash-badge" style={{ background: 'var(--primary-100)', color: 'var(--primary-700)' }}>{userRole}</span>
-          </div>
-        </div>
-
-        {loading && <OverviewSkeleton />}
-
-        {!loading && (
-        <div className="xui-d-grid xui-grid-col-1 xui-md-grid-col-2 xui-lg-grid-col-4 xui-grid-gap-1 xui-mb-2">
-          {portalStats && (
-            <>
-              <MetricCard title="Announcements" value={portalStats.total_announcements} icon={<Bullhorn size={24} />} iconBgColor="var(--info-light)" iconColor="var(--info)" />
-              <MetricCard title="Events" value={portalStats.total_events} icon={<EventSchedule size={24} />} iconBgColor="var(--success-light)" iconColor="var(--success)" />
-              <MetricCard title="Posts" value={portalStats.total_posts} icon={<Blog size={24} />} iconBgColor="#E0F3E9" iconColor="#111827" />
-              <MetricCard title="Gallery" value={portalStats.total_galleries} icon={<ImageIcon size={24} />} iconBgColor="var(--primary-100)" iconColor="var(--primary-700)" />
-              <MetricCard title="Categories" value={portalStats.total_categories} icon={<Category size={24} />} iconBgColor="var(--neutral-100)" iconColor="var(--neutral-600)" />
-              <MetricCard title="FAQs" value={portalStats.total_faqs} icon={<Help size={24} />} iconBgColor="#E5E7EB" iconColor="#111827" />
-              <MetricCard title="Members" value={portalStats.total_members} icon={<GroupPresentation size={24} />} iconBgColor="var(--success-light)" iconColor="var(--success)" />
-              <MetricCard title="Enquiries" value={portalStats.total_enquiries} icon={<UserMultiple size={24} />} iconBgColor="var(--warning-light)" iconColor="var(--warning)" />
-            </>
-          )}
-          {adminStats && (
-            <MetricCard title="Total Users" value={adminStats.total_users} icon={<UserMultiple size={24} />} iconBgColor="var(--primary-100)" iconColor="var(--primary-700)" />
-          )}
-          {supporterStats && (
-            <>
-              <MetricCard title="Support Group Types" value={supporterStats.total_support_group_types} icon={<Trophy size={24} />} iconBgColor="var(--info-light)" iconColor="var(--info)" />
-              <MetricCard title="Support Groups" value={supporterStats.total_support_groups} icon={<Person size={24} />} iconBgColor="#E0F3E9" iconColor="#111827" />
-              <MetricCard title="Members" value={supporterStats.total_members} icon={<GroupPresentation size={24} />} iconBgColor="var(--success-light)" iconColor="var(--success)" />
-            </>
-          )}
-          {approvalStats && (
-            <MetricCard title="Total Approvals" value={approvalStats.total_approvals} icon={<Checkmark size={24} />} iconBgColor="var(--warning-light)" iconColor="var(--warning)" />
-          )}
-        </div>
-        )}
-
         <div className="xui-mb-2">
-          <QuickActions />
+          <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--neutral-900)', margin: 0 }}>
+            Welcome back, {user?.fullname?.split(' ')[0] || 'Member'}
+          </h2>
+          <p style={{ fontSize: '14px', color: 'var(--neutral-500)', margin: '4px 0 0' }}>
+            Here&apos;s what&apos;s happening in your support group.
+          </p>
         </div>
 
-        {portalStats && (
-          <>
-            <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--neutral-800)', margin: '0 0 12px' }}>Content Engagement</h3>
-            <div className="xui-d-grid xui-grid-col-2 xui-md-grid-col-4 xui-grid-gap-1 xui-mb-2">
-              <MetricCard title="Announcement Views" value={portalStats.announcement_views_sum ?? 0} icon={<View size={24} />} iconBgColor="var(--primary-100)" iconColor="var(--primary-700)" />
-              <MetricCard title="Post Views" value={portalStats.post_views_sum ?? 0} icon={<View size={24} />} iconBgColor="var(--info-light)" iconColor="var(--info)" />
-              <MetricCard title="Event Views" value={portalStats.event_views_sum ?? 0} icon={<View size={24} />} iconBgColor="var(--success-light)" iconColor="var(--success)" />
-              <MetricCard title="Minutes Read" value={portalStats.post_minutes_read_sum ?? 0} icon={<Timer size={24} />} iconBgColor="var(--warning-light)" iconColor="var(--warning)" />
+        {loading ? <DetailSkeleton /> : (
+          <div className={cardClass} style={cardStyle}>
+            <div className="xui-d-flex xui-flex-ai-center xui-grid-gap-1 xui-mb-2">
+              {profile?.User?.profile_image ? (
+                <img
+                  src={profile.User.profile_image}
+                  alt={fullName}
+                  style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--neutral-200)', flexShrink: 0 }}
+                />
+              ) : (
+                <div
+                  className="xui-d-flex xui-flex-ai-center xui-flex-jc-center xui-font-w-700 xui-text-white"
+                  style={{ width: '72px', height: '72px', borderRadius: '50%', background: '#111827', fontSize: '26px', flexShrink: 0 }}
+                >
+                  {initials}
+                </div>
+              )}
+              <div style={{ minWidth: 0 }}>
+                <h3 className="xui-font-sz-[18px] xui-font-w-600" style={{ margin: 0 }}>{fullName}</h3>
+                <div className="xui-d-flex xui-flex-ai-center xui-flex-wrap-wrap xui-grid-gap-half xui-mt-half">
+                  {roleName && (
+                    <span className="xui-font-sz-75 xui-font-w-500" style={{ padding: '2px 10px', borderRadius: '20px', backgroundColor: 'var(--primary-100)', color: 'var(--primary-700)' }}>
+                      {roleName}
+                    </span>
+                  )}
+                  {profile?.SupportGroup?.name && (
+                    <span className="xui-font-sz-75 xui-font-w-500" style={{ padding: '2px 10px', borderRadius: '20px', backgroundColor: 'var(--neutral-100)', color: 'var(--neutral-700)' }}>
+                      {profile.SupportGroup.name}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
-          </>
+
+            <hr className="xui-my-1" />
+
+            <div className="xui-d-grid xui-grid-col-1 xui-md-grid-col-2 xui-lg-grid-col-3 xui-grid-gap-1-half">
+              <Field label="Email" value={profile?.User?.email} />
+              <Field label="Phone Number" value={profile?.User?.phone_number} />
+              <Field label="Gender" value={profile?.User?.gender} />
+              <Field label="Date of Birth" value={profile?.User?.date_of_birth ? formatDate(profile.User.date_of_birth) : ''} />
+              <Field label="NIN" value={profile?.nin} />
+              <Field label="Member Since" value={profile?.createdAt ? formatDate(profile.createdAt) : ''} />
+            </div>
+          </div>
         )}
 
-        <div className="xui-d-grid xui-grid-col-1 xui-md-grid-col-2 xui-grid-gap-1 xui-mb-2">
-          {approvalStats && approvalStats.total_approval_via_approval_status.length > 0 && (
-            <div className="xui-bg-white xui-bdr-rad-half xui-overflow-hidden" style={{ border: '1px solid var(--neutral-200)' }}>
-              <div className="xui-py-1 xui-px-1-half" style={{ borderBottom: '1px solid var(--neutral-100)' }}>
-                <h3 className="xui-d-flex xui-flex-ai-center xui-grid-gap-half" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--neutral-800)', margin: 0 }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block', flexShrink: 0, background: 'var(--warning)' }} />
-                  Approvals by Status
-                </h3>
-              </div>
-              <div className="xui-py-1 xui-px-1-half">
-                <Chart
-                  type="donut"
-                  height={260}
-                  series={approvalStats.total_approval_via_approval_status.map((i) => i.total_count)}
-                  options={{
-                    labels: approvalStats.total_approval_via_approval_status.map((i) => i.approval_status),
-                    colors: approvalStats.total_approval_via_approval_status.map((i) => getStatusColor(i.approval_status)),
-                    legend: { position: 'bottom', fontSize: '11px' },
-                    dataLabels: { enabled: true, formatter: (val: number) => `${val.toFixed(0)}%`, style: { fontSize: '11px' } },
-                    plotOptions: { pie: { donut: { size: '60%' } } },
-                  }}
-                />
-              </div>
+        <QuickActions />
+
+        <div className={cardClass} style={{ ...cardStyle, marginTop: '16px' }}>
+          <div className="xui-d-flex xui-flex-ai-center xui-grid-gap-1">
+            {profile?.SupportGroup?.image && (
+              <img
+                src={profile.SupportGroup.image}
+                alt={profile.SupportGroup.name}
+                style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--neutral-200)', flexShrink: 0 }}
+              />
+            )}
+            <h3 className="xui-font-sz-[16px] xui-font-w-600" style={{ margin: 0 }}>About {APP_NAME}</h3>
+          </div>
+          <p className="xui-font-sz-90 xui-mt-1" style={{ color: 'var(--neutral-600)', margin: '8px 0 0', lineHeight: 1.6 }}>
+            The Dickson Movement for Democracy brings supporters together through support groups across the country.
+            This portal is where your group shares announcements, events and posts with its members.
+          </p>
+          {coverage && (
+            <div className="xui-d-flex xui-flex-ai-center xui-flex-wrap-wrap xui-grid-gap-half xui-mt-1">
+              {profile?.SupportGroup?.scope_option && (
+                <span className="xui-font-sz-75 xui-font-w-500" style={{ padding: '2px 10px', borderRadius: '20px', backgroundColor: 'var(--primary-100)', color: 'var(--primary-700)' }}>
+                  {profile.SupportGroup.scope_option}
+                </span>
+              )}
+              <span className="xui-font-sz-85" style={{ color: 'var(--neutral-600)' }}>{coverage}</span>
             </div>
           )}
 
-          {supporterStats && (supporterStats.total_support_groups_via_support_group_types ?? []).length > 0 && (
-            <div className="xui-bg-white xui-bdr-rad-half xui-overflow-hidden" style={{ border: '1px solid var(--neutral-200)' }}>
-              <div className="xui-py-1 xui-px-1-half" style={{ borderBottom: '1px solid var(--neutral-100)' }}>
-                <h3 className="xui-d-flex xui-flex-ai-center xui-grid-gap-half" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--neutral-800)', margin: 0 }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block', flexShrink: 0, background: '#111827' }} />
-                  Support Groups by Type
-                </h3>
-              </div>
-              <div className="xui-py-1 xui-px-1-half">
-                <Chart
-                  type="bar"
-                  height={260}
-                  series={[{ name: 'Support Groups', data: (supporterStats.total_support_groups_via_support_group_types ?? []).map((i) => i.total_count) }]}
-                  options={{
-                    chart: { toolbar: { show: false } },
-                    xaxis: {
-                      categories: (supporterStats.total_support_groups_via_support_group_types ?? []).map((i) => i.SupportGroupType?.title || i.SupportGroupType?.name || 'Unknown'),
-                      labels: { style: { fontSize: '11px', colors: 'var(--neutral-400)' }, rotate: -45 },
-                    },
-                    yaxis: { labels: { style: { fontSize: '11px', colors: 'var(--neutral-400)' } } },
-                    colors: ['#009A49'],
-                    plotOptions: { bar: { borderRadius: 4, columnWidth: '50%' } },
-                    dataLabels: { enabled: false },
-                    grid: { borderColor: 'var(--neutral-100)', strokeDashArray: 4 },
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {approvalStats && approvalStats.total_approvals_via_module.length > 0 && (
-            <div className="xui-bg-white xui-bdr-rad-half xui-overflow-hidden" style={{ border: '1px solid var(--neutral-200)' }}>
-              <div className="xui-py-1 xui-px-1-half" style={{ borderBottom: '1px solid var(--neutral-100)' }}>
-                <h3 className="xui-d-flex xui-flex-ai-center xui-grid-gap-half" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--neutral-800)', margin: 0 }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block', flexShrink: 0, background: '#009A49' }} />
-                  Approvals by Module
-                </h3>
-              </div>
-              <div className="xui-py-1 xui-px-1-half">
-                <Chart
-                  type="donut"
-                  height={260}
-                  series={approvalStats.total_approvals_via_module.map((i) => i.total_count)}
-                  options={{
-                    labels: approvalStats.total_approvals_via_module.map((i) => i.Module?.name || 'Unknown'),
-                    colors: CHART_COLORS,
-                    legend: { position: 'bottom', fontSize: '11px' },
-                    dataLabels: { enabled: true, formatter: (val: number) => `${val.toFixed(0)}%`, style: { fontSize: '11px' } },
-                    plotOptions: { pie: { donut: { size: '60%' } } },
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {adminStats && adminStats.total_users_via_role.length > 0 && (
-            <div className="xui-bg-white xui-bdr-rad-half xui-overflow-hidden" style={{ border: '1px solid var(--neutral-200)' }}>
-              <div className="xui-py-1 xui-px-1-half" style={{ borderBottom: '1px solid var(--neutral-100)' }}>
-                <h3 className="xui-d-flex xui-flex-ai-center xui-grid-gap-half" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--neutral-800)', margin: 0 }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block', flexShrink: 0, background: 'var(--success)' }} />
-                  Users by Role
-                </h3>
-              </div>
-              <div className="xui-py-1 xui-px-1-half">
-                <Chart
-                  type="donut"
-                  height={260}
-                  series={adminStats.total_users_via_role.map((i) => i.total_count)}
-                  options={{
-                    labels: adminStats.total_users_via_role.map((i) => i.Role?.name || 'Unknown'),
-                    colors: CHART_COLORS,
-                    legend: { position: 'bottom', fontSize: '11px' },
-                    dataLabels: { enabled: true, formatter: (val: number) => `${val.toFixed(0)}%`, style: { fontSize: '11px' } },
-                    plotOptions: { pie: { donut: { size: '60%' } } },
-                  }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="xui-d-grid xui-grid-col-1 xui-md-grid-col-2 xui-grid-gap-1 xui-mb-2">
-          {portalStats && (portalStats.total_posts_via_category ?? []).length > 0 && (
-            <div className="xui-bg-white xui-bdr-rad-half xui-overflow-hidden" style={{ border: '1px solid var(--neutral-200)' }}>
-              <div className="xui-py-1 xui-px-1-half" style={{ borderBottom: '1px solid var(--neutral-100)' }}>
-                <h3 className="xui-d-flex xui-flex-ai-center xui-grid-gap-half" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--neutral-800)', margin: 0 }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block', flexShrink: 0, background: '#009A49' }} />
-                  Posts by Category
-                </h3>
-              </div>
-              <div className="xui-py-1 xui-px-1-half">
-                <Chart
-                  type="donut"
-                  height={260}
-                  series={portalStats.total_posts_via_category.map((i) => i.total_count)}
-                  options={{
-                    labels: portalStats.total_posts_via_category.map((i) => i.Category?.name || 'Uncategorised'),
-                    colors: CHART_COLORS,
-                    legend: { position: 'bottom', fontSize: '11px' },
-                    dataLabels: { enabled: true, formatter: (val: number) => `${val.toFixed(0)}%`, style: { fontSize: '11px' } },
-                    plotOptions: { pie: { donut: { size: '60%' } } },
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {portalStats && (portalStats.total_enquiries_via_enquiry_status ?? []).length > 0 && (
-            <div className="xui-bg-white xui-bdr-rad-half xui-overflow-hidden" style={{ border: '1px solid var(--neutral-200)' }}>
-              <div className="xui-py-1 xui-px-1-half" style={{ borderBottom: '1px solid var(--neutral-100)' }}>
-                <h3 className="xui-d-flex xui-flex-ai-center xui-grid-gap-half" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--neutral-800)', margin: 0 }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block', flexShrink: 0, background: '#111827' }} />
-                  Enquiries by Status
-                </h3>
-              </div>
-              <div className="xui-py-1 xui-px-1-half">
-                <Chart
-                  type="donut"
-                  height={260}
-                  series={portalStats.total_enquiries_via_enquiry_status.map((i) => i.total_count)}
-                  options={{
-                    labels: portalStats.total_enquiries_via_enquiry_status.map((i) => i.enquiry_status),
-                    colors: CHART_COLORS,
-                    legend: { position: 'bottom', fontSize: '11px' },
-                    dataLabels: { enabled: true, formatter: (val: number) => `${val.toFixed(0)}%`, style: { fontSize: '11px' } },
-                    plotOptions: { pie: { donut: { size: '60%' } } },
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {portalStats && (portalStats.total_newsletters_via_subscription ?? []).length > 0 && (
-            <div className="xui-bg-white xui-bdr-rad-half xui-overflow-hidden" style={{ border: '1px solid var(--neutral-200)' }}>
-              <div className="xui-py-1 xui-px-1-half" style={{ borderBottom: '1px solid var(--neutral-100)' }}>
-                <h3 className="xui-d-flex xui-flex-ai-center xui-grid-gap-half" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--neutral-800)', margin: 0 }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block', flexShrink: 0, background: '#009A49' }} />
-                  Newsletter Subscriptions
-                </h3>
-              </div>
-              <div className="xui-py-1 xui-px-1-half">
-                <Chart
-                  type="donut"
-                  height={260}
-                  series={portalStats.total_newsletters_via_subscription.map((i) => i.total_count)}
-                  options={{
-                    labels: portalStats.total_newsletters_via_subscription.map((i) => (i.subscription ? 'Subscribed' : 'Unsubscribed')),
-                    colors: CHART_COLORS,
-                    legend: { position: 'bottom', fontSize: '11px' },
-                    dataLabels: { enabled: true, formatter: (val: number) => `${val.toFixed(0)}%`, style: { fontSize: '11px' } },
-                    plotOptions: { pie: { donut: { size: '60%' } } },
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {portalStats && (portalStats.total_members_via_member_role ?? []).length > 0 && (
-            <div className="xui-bg-white xui-bdr-rad-half xui-overflow-hidden" style={{ border: '1px solid var(--neutral-200)' }}>
-              <div className="xui-py-1 xui-px-1-half" style={{ borderBottom: '1px solid var(--neutral-100)' }}>
-                <h3 className="xui-d-flex xui-flex-ai-center xui-grid-gap-half" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--neutral-800)', margin: 0 }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block', flexShrink: 0, background: '#111827' }} />
-                  Members by Role
-                </h3>
-              </div>
-              <div className="xui-py-1 xui-px-1-half">
-                <Chart
-                  type="donut"
-                  height={260}
-                  series={portalStats.total_members_via_member_role.map((i) => i.total_count)}
-                  options={{
-                    labels: portalStats.total_members_via_member_role.map((i) => i.MemberRole?.name || 'Unassigned'),
-                    colors: CHART_COLORS,
-                    legend: { position: 'bottom', fontSize: '11px' },
-                    dataLabels: { enabled: true, formatter: (val: number) => `${val.toFixed(0)}%`, style: { fontSize: '11px' } },
-                    plotOptions: { pie: { donut: { size: '60%' } } },
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {portalStats && (portalStats.total_file_storage_via_file_type ?? []).length > 0 && (
-            <div className="xui-bg-white xui-bdr-rad-half xui-overflow-hidden" style={{ border: '1px solid var(--neutral-200)' }}>
-              <div className="xui-py-1 xui-px-1-half" style={{ borderBottom: '1px solid var(--neutral-100)' }}>
-                <h3 className="xui-d-flex xui-flex-ai-center xui-grid-gap-half" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--neutral-800)', margin: 0 }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block', flexShrink: 0, background: '#009A49' }} />
-                  Files by Type
-                </h3>
-              </div>
-              <div className="xui-py-1 xui-px-1-half">
-                <Chart
-                  type="donut"
-                  height={260}
-                  series={portalStats.total_file_storage_via_file_type.map((i) => i.total_count)}
-                  options={{
-                    labels: portalStats.total_file_storage_via_file_type.map((i) => i.file_type || 'Unknown'),
-                    colors: CHART_COLORS,
-                    legend: { position: 'bottom', fontSize: '11px' },
-                    dataLabels: { enabled: true, formatter: (val: number) => `${val.toFixed(0)}%`, style: { fontSize: '11px' } },
-                    plotOptions: { pie: { donut: { size: '60%' } } },
-                  }}
-                />
-              </div>
-            </div>
-          )}
+          <a
+            href="https://thedicksonmovement.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="xui-d-inline-flex xui-font-sz-85 xui-font-w-500 xui-mt-1"
+            style={{ color: 'var(--primary-600)' }}
+          >
+            Visit thedicksonmovement.com
+          </a>
         </div>
       </div>
     </div>

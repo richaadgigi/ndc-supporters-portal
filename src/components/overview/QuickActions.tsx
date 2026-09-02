@@ -1,6 +1,7 @@
 'use client';
 import { Blog, EventSchedule, Bullhorn, UserMultiple, Image } from '@carbon/icons-react';
 import { useRouter } from 'next/navigation';
+import { useGeneral } from '../../context/GeneralContext';
 
 interface QuickAction {
   label: string;
@@ -8,18 +9,25 @@ interface QuickAction {
   bgColor: string;
   iconColor: string;
   path: string;
+  subModule: string;
 }
 
 const QuickActions = () => {
   const router = useRouter();
+  const { acls } = useGeneral();
 
-  const actions: QuickAction[] = [
+  const canAddTo = new Set(
+    acls.filter((a) => a.add && a.status === 1 && a.SubModule?.stripped).map((a) => a.SubModule!.stripped)
+  );
+
+  const allActions: QuickAction[] = [
     {
       label: 'Add Post',
       icon: <Blog size={20} />,
       bgColor: 'var(--primary-100)',
       iconColor: 'var(--primary-700)',
       path: '/dashboard/supporter-portal/posts/add',
+      subModule: 'posts',
     },
     {
       label: 'Add Event',
@@ -27,6 +35,7 @@ const QuickActions = () => {
       bgColor: 'var(--info-light)',
       iconColor: 'var(--info)',
       path: '/dashboard/supporter-portal/events/add',
+      subModule: 'events',
     },
     {
       label: 'Add Announcement',
@@ -34,6 +43,7 @@ const QuickActions = () => {
       bgColor: 'var(--success-light)',
       iconColor: 'var(--success)',
       path: '/dashboard/supporter-portal/announcements/add',
+      subModule: 'announcements',
     },
     {
       label: 'Add Member',
@@ -41,6 +51,7 @@ const QuickActions = () => {
       bgColor: 'var(--warning-light)',
       iconColor: 'var(--warning)',
       path: '/dashboard/supporter-portal/members/add',
+      subModule: 'members',
     },
     {
       label: 'Add Gallery',
@@ -48,8 +59,13 @@ const QuickActions = () => {
       bgColor: 'var(--neutral-200)',
       iconColor: 'var(--neutral-700)',
       path: '/dashboard/supporter-portal/gallery/add',
+      subModule: 'gallery',
     },
   ];
+
+  const actions = allActions.filter((a) => canAddTo.has(a.subModule));
+
+  if (actions.length === 0) return null;
 
   return (
     <div className="xui-bg-white xui-bdr-rad-half xui-overflow-hidden" style={{ border: '1px solid var(--neutral-200)' }}>

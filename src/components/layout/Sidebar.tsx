@@ -141,7 +141,7 @@ const subModulePaths: Record<string, string> = {
 };
 
 const moduleGroups: Record<string, string> = {
-  'supporter-portal': 'Support Group',
+  'supporter-portal': 'My Group',
   'supporter': 'Administration',
   'roles': 'Administration',
   'acls': 'Administration',
@@ -150,16 +150,9 @@ const moduleGroups: Record<string, string> = {
   'administration': 'Administration',
 };
 
-const PUBLIC_MEMBER_ITEMS: NavItem[] = [
-  { label: 'Announcements', path: '/dashboard/announcements', icon: <Bullhorn size={20} /> },
-  { label: 'Events', path: '/dashboard/events', icon: <EventSchedule size={20} /> },
-  { label: 'Gallery', path: '/dashboard/gallery', icon: <Image size={20} /> },
-  { label: 'Posts', path: '/dashboard/posts', icon: <Blog size={20} /> },
-];
-
 const Sidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  const { acls, isPortalUser, userType } = useGeneral();
+  const { acls, userType } = useGeneral();
   const pathname = usePathname();
 
   const toggleExpand = (label: string) => {
@@ -177,65 +170,59 @@ const Sidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
       'Administration': [],
     };
 
-    if (!isPortalUser) {
-      groups['My Group'] = PUBLIC_MEMBER_ITEMS;
-    } else {
-      const aclsByModule: Record<string, { moduleName: string; moduleStripped: string; subModules: { name: string; stripped: string }[] }> = {};
+    const aclsByModule: Record<string, { moduleName: string; moduleStripped: string; subModules: { name: string; stripped: string }[] }> = {};
 
-      acls.forEach((acl) => {
-        const moduleStripped = acl.Module?.stripped;
-        const moduleName = acl.Module?.name;
-        const subModuleStripped = acl.SubModule?.stripped;
-        const subModuleName = acl.SubModule?.name;
+    acls.forEach((acl) => {
+      const moduleStripped = acl.Module?.stripped;
+      const moduleName = acl.Module?.name;
+      const subModuleStripped = acl.SubModule?.stripped;
+      const subModuleName = acl.SubModule?.name;
 
-        if (moduleStripped && moduleName) {
-          if (!aclsByModule[moduleStripped]) {
-            aclsByModule[moduleStripped] = { moduleName, moduleStripped, subModules: [] };
-          }
-          if (subModuleStripped && subModuleName) {
-            const exists = aclsByModule[moduleStripped].subModules.some(s => s.stripped === subModuleStripped);
-            if (!exists) {
-              aclsByModule[moduleStripped].subModules.push({ name: subModuleName, stripped: subModuleStripped });
-            }
+      if (moduleStripped && moduleName) {
+        if (!aclsByModule[moduleStripped]) {
+          aclsByModule[moduleStripped] = { moduleName, moduleStripped, subModules: [] };
+        }
+        if (subModuleStripped && subModuleName) {
+          const exists = aclsByModule[moduleStripped].subModules.some(s => s.stripped === subModuleStripped);
+          if (!exists) {
+            aclsByModule[moduleStripped].subModules.push({ name: subModuleName, stripped: subModuleStripped });
           }
         }
+      }
+    });
+
+    Object.values(aclsByModule).forEach((module) => {
+      const groupName = moduleGroups[module.moduleStripped] || 'Support Group';
+
+      if (userType === 'admin' && groupName === 'Support Group') return;
+      if (userType === 'portal' && groupName === 'Administration') return;
+
+      const basePath = modulePaths[module.moduleStripped] || `/dashboard/${module.moduleStripped}`;
+      const moduleIcon = moduleIcons[module.moduleStripped] || <Folder size={20} />;
+
+      const children: NavItem[] = module.subModules.map((subModule) => {
+        const subPath = subModulePaths[subModule.stripped] ?? `/${subModule.stripped}`;
+        const subIcon = subModuleIcons[subModule.stripped] || <Document size={16} />;
+        return {
+          label: subModule.name,
+          path: `${basePath}${subPath}`,
+          icon: subIcon,
+          end: subPath === '',
+        };
       });
 
-      Object.values(aclsByModule).forEach((module) => {
-        const groupName = moduleGroups[module.moduleStripped] || 'Support Group';
-
-        if (userType === 'admin' && groupName === 'Support Group') return;
-        if (userType === 'portal' && groupName === 'Administration') return;
-
-        const basePath = modulePaths[module.moduleStripped] || `/dashboard/${module.moduleStripped}`;
-        const moduleIcon = moduleIcons[module.moduleStripped] || <Folder size={20} />;
-
-        const children: NavItem[] = module.subModules.map((subModule) => {
-          const subPath = subModulePaths[subModule.stripped] ?? `/${subModule.stripped}`;
-          const subIcon = subModuleIcons[subModule.stripped] || <Document size={16} />;
-          return {
-            label: subModule.name,
-            path: `${basePath}${subPath}`,
-            icon: subIcon,
-            end: subPath === '',
-          };
+      if (children.length > 0) {
+        groups[groupName].push({
+          label: module.moduleName,
+          path: basePath,
+          icon: moduleIcon,
+          children,
         });
-
-        if (children.length > 0) {
-          groups[groupName].push({
-            label: module.moduleName,
-            path: basePath,
-            icon: moduleIcon,
-            children,
-          });
-        }
-      });
-    }
+      }
+    });
 
     const result: NavGroup[] = [];
-    const groupOrder = isPortalUser
-      ? ['Overview', 'Support Group', 'Administration']
-      : ['Overview', 'My Group'];
+    const groupOrder = ['Overview', 'My Group', 'Support Group', 'Administration'];
 
     groupOrder.forEach((groupLabel) => {
       if (groups[groupLabel]?.length > 0) {
@@ -244,7 +231,7 @@ const Sidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
     });
 
     return result;
-  }, [acls, isPortalUser, userType]);
+  }, [acls, userType]);
 
   useEffect(() => {
     const activeLabels: string[] = [];

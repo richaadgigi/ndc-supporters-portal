@@ -17,7 +17,7 @@ export interface Member {
   createdAt: string;
   updatedAt: string;
   User?: { unique_id: string; firstname: string; middlename?: string | null; lastname: string; email: string; phone_number?: string | null; gender?: string | null; date_of_birth?: string | null; profile_image?: string | null; Role?: { unique_id: string; name: string; stripped: string } } | null;
-  SupportGroup?: { unique_id: string; name: string; stripped: string; image?: string | null; state?: string | null } | null;
+  SupportGroup?: { unique_id: string; name: string; stripped: string; image?: string | null; state?: string | null; scope_option?: string | null; states_covered?: string[] | null } | null;
   MemberRole?: { unique_id: string; name: string; stripped: string } | null;
   Creator?: { unique_id: string; code?: string | null; nin?: string | null } | null;
 }
