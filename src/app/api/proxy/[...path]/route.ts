@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const TARGET = (process.env.API_URL ?? process.env.API_PROXY_TARGET ?? '').replace(/\/+$/, '');
-const API_KEY = process.env.API_KEY ?? '';
+const TARGET = (process.env.NEXT_PUBLIC_API_URL ?? '').replace(/\/+$/, '');
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY ?? '';
 
 async function handler(req: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;
