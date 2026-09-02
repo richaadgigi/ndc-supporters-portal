@@ -6,14 +6,10 @@ import { useForm } from 'react-hook-form';
 import { View, ViewOff } from '@carbon/icons-react';
 import { APP_NAME } from '../../Globals';
 import authService from '../../services/auth.service';
-import statesService from '../../services/states.service';
-import lgasService from '../../services/lgas.service';
-import wardsService from '../../services/wards.service';
-import type { State } from '../../services/states.service';
-import type { Lga } from '../../services/lgas.service';
-import type { Ward } from '../../services/wards.service';
+import geographyService from '../../services/geography.service';
+import type { GeoItem } from '../../services/geography.service';
 import { Alert, showAlert, PhoneNumberInput, DateOfBirthSelect } from '../../components/common';
-import { extractErrorMessage, sortAlphabetically } from '../../utils/formatters';
+import { extractErrorMessage } from '../../utils/formatters';
 
 interface SignupFormData {
   firstname: string;
@@ -26,6 +22,7 @@ interface SignupFormData {
   state: string;
   lga: string;
   ward: string;
+  constituency: string;
   email: string;
   phone_number: string;
   password: string;
@@ -34,11 +31,9 @@ interface SignupFormData {
 
 const STEPS = [
   { label: 'Personal', fields: ['firstname', 'middlename', 'lastname', 'gender', 'date_of_birth', 'nin'] },
-  { label: 'Location', fields: ['country', 'state', 'lga', 'ward'] },
+  { label: 'Location', fields: ['country', 'state', 'lga', 'ward', 'constituency'] },
   { label: 'Account', fields: ['email', 'phone_number', 'password', 'confirmPassword'] },
 ] as const;
-
-const unwrap = (res: any): any[] => (res?.success && res.data ? (Array.isArray(res.data) ? res.data : res.data.rows || []) : []);
 
 const Signup = () => {
   const router = useRouter();
@@ -49,9 +44,10 @@ const Signup = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const [states, setStates] = useState<State[]>([]);
-  const [lgas, setLgas] = useState<Lga[]>([]);
-  const [wards, setWards] = useState<Ward[]>([]);
+  const [states, setStates] = useState<GeoItem[]>([]);
+  const [lgas, setLgas] = useState<GeoItem[]>([]);
+  const [wards, setWards] = useState<GeoItem[]>([]);
+  const [constituencies, setConstituencies] = useState<GeoItem[]>([]);
   const [stateId, setStateId] = useState('');
   const [lgaId, setLgaId] = useState('');
   const [zone, setZone] = useState('');
@@ -59,7 +55,7 @@ const Signup = () => {
   const { register, control, handleSubmit, watch, setValue, trigger, formState: { errors } } = useForm<SignupFormData>({
     defaultValues: {
       firstname: '', middlename: '', lastname: '', gender: '', date_of_birth: '', nin: '',
-      country: 'Nigeria', state: '', lga: '', ward: '',
+      country: 'Nigeria', state: '', lga: '', ward: '', constituency: '',
       email: '', phone_number: '', password: '', confirmPassword: '',
     },
   });
@@ -67,37 +63,33 @@ const Signup = () => {
   const passwordValue = watch('password');
 
   useEffect(() => {
-    statesService.publicGetAll({ size: 100 })
-      .then(res => setStates(sortAlphabetically(unwrap(res), 'name')))
-      .catch(() => {});
+    geographyService.getStates().then(setStates).catch(() => {});
   }, []);
 
   useEffect(() => {
-    if (!stateId) { setLgas([]); return; }
-    lgasService.publicGetAll({ size: 100, state_unique_id: stateId })
-      .then(res => setLgas(sortAlphabetically(unwrap(res), 'name')))
-      .catch(() => setLgas([]));
+    if (!stateId) { setLgas([]); setConstituencies([]); return; }
+    geographyService.getLgas(stateId).then(setLgas).catch(() => setLgas([]));
+    geographyService.getConstituencies(stateId).then(setConstituencies).catch(() => setConstituencies([]));
   }, [stateId]);
 
   useEffect(() => {
     if (!lgaId) { setWards([]); return; }
-    wardsService.publicGetAll({ size: 200, lga_unique_id: lgaId })
-      .then(res => setWards(sortAlphabetically(unwrap(res), 'name')))
-      .catch(() => setWards([]));
+    geographyService.getWards(lgaId).then(setWards).catch(() => setWards([]));
   }, [lgaId]);
 
   const onStateChange = (id: string) => {
-    const picked = states.find(s => s.unique_id === id);
+    const picked = states.find(s => String(s.id) === id);
     setStateId(id);
     setLgaId('');
     setValue('state', picked?.name || '');
     setValue('lga', '');
     setValue('ward', '');
-    setZone(picked?.Zone?.name || '');
+    setValue('constituency', '');
+    setZone(picked?.region || '');
   };
 
   const onLgaChange = (id: string) => {
-    const picked = lgas.find(l => l.unique_id === id);
+    const picked = lgas.find(l => String(l.id) === id);
     setLgaId(id);
     setValue('lga', picked?.name || '');
     setValue('ward', '');
@@ -126,6 +118,7 @@ const Signup = () => {
         ...(data.state && { state: data.state }),
         ...(data.lga && { lga: data.lga }),
         ...(data.ward && { ward: data.ward }),
+        ...(data.constituency && { constituency: data.constituency }),
         password: data.password,
         confirmPassword: data.confirmPassword,
       });
@@ -251,7 +244,7 @@ const Signup = () => {
                 <select id="state" value={stateId} onChange={(e) => onStateChange(e.target.value)}>
                   <option value="">Select your state</option>
                   {states.map((s) => (
-                    <option key={s.unique_id} value={s.unique_id}>{s.name}</option>
+                    <option key={s.id} value={String(s.id)}>{s.name}</option>
                   ))}
                 </select>
                 <input type="hidden" {...register('state', { required: 'State is required' })} />
@@ -265,7 +258,7 @@ const Signup = () => {
                 <select id="lga" value={lgaId} onChange={(e) => onLgaChange(e.target.value)} disabled={!stateId}>
                   <option value="">{stateId ? 'Select your LGA' : 'Select a state first'}</option>
                   {lgas.map((l) => (
-                    <option key={l.unique_id} value={l.unique_id}>{l.name}</option>
+                    <option key={l.id} value={String(l.id)}>{l.name}</option>
                   ))}
                 </select>
                 <input type="hidden" {...register('lga', { required: 'LGA is required' })} />
@@ -277,10 +270,20 @@ const Signup = () => {
                 <select id="ward" value={watch('ward')} onChange={(e) => setValue('ward', e.target.value)} disabled={!lgaId}>
                   <option value="">{lgaId ? 'Select your ward' : 'Select an LGA first'}</option>
                   {wards.map((w) => (
-                    <option key={w.unique_id} value={w.name}>{w.name}</option>
+                    <option key={w.id} value={w.name}>{w.name}</option>
                   ))}
                 </select>
               </div>
+            </div>
+
+            <div className="xui-form-box">
+              <label htmlFor="constituency">Constituency</label>
+              <select id="constituency" value={watch('constituency')} onChange={(e) => setValue('constituency', e.target.value)} disabled={!stateId}>
+                <option value="">{stateId ? 'Select your constituency' : 'Select a state first'}</option>
+                {constituencies.map((c) => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+              </select>
             </div>
           </div>
 

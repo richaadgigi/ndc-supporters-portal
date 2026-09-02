@@ -7,6 +7,8 @@ import { Alert, showAlert } from '../../components/common';
 import { useGeneral } from '../../context/GeneralContext';
 import authService from '../../services/auth.service';
 import membersService from '../../services/members.service';
+import type { Member } from '../../services/members.service';
+import UpdateDemography from '../../components/profile/UpdateDemography';
 
 interface PasswordFormData {
   oldPassword: string;
@@ -18,6 +20,7 @@ export default function Profile() {
   const { user, logout } = useGeneral();
   const [email, setEmail] = useState('');
   const [roleName, setRoleName] = useState('');
+  const [profile, setProfile] = useState<Member | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -33,15 +36,20 @@ export default function Profile() {
     formState: { errors },
   } = useForm<PasswordFormData>();
 
-  useEffect(() => {
+  const loadProfile = () => {
     membersService.portalGetProfile()
       .then(res => {
         if (res.success && res.data) {
+          setProfile(res.data);
           setEmail(res.data.User?.email || '');
           setRoleName(res.data.MemberRole?.name || '');
         }
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadProfile();
   }, []);
 
   const onSubmit = async (data: PasswordFormData) => {
@@ -213,6 +221,15 @@ export default function Profile() {
               </button>
             </form>
           </div>
+        </div>
+
+        <div className="xui-mt-1-half">
+          <UpdateDemography
+            profile={profile}
+            onSuccess={loadProfile}
+            setError={setErrorMessage}
+            setSuccessMessage={setSuccessMessage}
+          />
         </div>
       </div>
 

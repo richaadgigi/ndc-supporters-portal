@@ -1,6 +1,11 @@
 export interface GeoItem {
   id: number | string;
   name: string;
+  region?: string;
+  state_id?: number;
+  lga_id?: number | string;
+  ward_id?: string;
+  pu_code?: string;
 }
 
 interface GeoPage<T> {

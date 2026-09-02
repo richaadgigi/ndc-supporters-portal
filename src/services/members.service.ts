@@ -95,6 +95,11 @@ const membersService = {
     return response.data;
   },
 
+  portalUpdateDemography: async (data: { zone?: string; state?: string; lga?: string; ward?: string; constituency?: string }): Promise<{ success: boolean; message: string }> => {
+    const response = await api.put('/portal/member/demography', data);
+    return response.data;
+  },
+
   portalSearch: async (params: SearchParams): Promise<MembersResponse> => {
     const response = await api.get(`/portal/team/search/members?${buildQueryParams(params)}`);
     return response.data;
