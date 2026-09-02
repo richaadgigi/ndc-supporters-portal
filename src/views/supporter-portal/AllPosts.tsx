@@ -174,7 +174,7 @@ const AllPosts = () => {
                         {item.Category.name}
                       </span>
                     )}
-                    <span className="xui-font-sz-70 xui-font-w-500" style={{ position: 'absolute', top: '12px', right: '12px', backgroundColor: item.approved_by ? 'var(--success)' : '#d97706', color: '#fff', padding: '4px 8px', borderRadius: '4px' }}>
+                    <span className="xui-font-sz-70 xui-font-w-500" style={{ position: 'absolute', top: '12px', right: '12px', backgroundColor: item.approved_by ? 'var(--success)' : '#111827', color: '#fff', padding: '4px 8px', borderRadius: '4px' }}>
                       {item.approved_by ? 'Approved' : 'Pending'}
                     </span>
                   </div>

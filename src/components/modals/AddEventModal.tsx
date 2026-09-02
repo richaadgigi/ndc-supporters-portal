@@ -5,7 +5,7 @@ import QuillEditor from '@/components/QuillEditor';
 import { Close } from '@carbon/icons-react';
 import { modalHide } from '@richaadgigi/stylexui';
 import eventsService from '../../services/events.service';
-import supportGroupsService from '../../services/supportGroups.service';
+import supportGroupMembersService from '../../services/supportGroupMembers.service';
 import type { SupportGroup } from '../../services/supportGroups.service';
 import { showAlert } from '../common';
 import { extractErrorMessage, sanitizeHTML } from '../../utils/formatters';
@@ -57,9 +57,10 @@ const AddEventModal = ({ date, accessIds, onSuccess, setError, setSuccessMessage
 
   useEffect(() => {
     if (!accessIds) return;
-    supportGroupsService.getAll({ size: 200, module_unique_id: accessIds.module_unique_id, sub_module_unique_id: accessIds.sub_module_unique_id }).then(res => {
+    supportGroupMembersService.portalGetUserGroups({ module_unique_id: accessIds.module_unique_id, sub_module_unique_id: accessIds.sub_module_unique_id }).then(res => {
       if (res.success && res.data) {
-        setSupportGroups(Array.isArray(res.data) ? res.data : (res.data as any).rows || []);
+        const rows = Array.isArray(res.data) ? res.data : (res.data as any).rows || [];
+        setSupportGroups(rows.map((r: any) => r.SupportGroup).filter(Boolean));
       }
     }).catch(() => {});
   }, [accessIds?.module_unique_id]);
@@ -211,7 +212,7 @@ const AddEventModal = ({ date, accessIds, onSuccess, setError, setSuccessMessage
           <div className="xui-form-box" style={{ minWidth: 0, overflow: 'hidden' }}>
             <label>Description *</label>
             <QuillEditor value={description} onChange={setDescription} />
-            <p style={{ fontSize: '12px', marginTop: '6px', color: description.length > 65535 ? 'var(--error)' : description.length > 55000 ? 'var(--warning, #f59e0b)' : 'var(--neutral-400)' }}>
+            <p style={{ fontSize: '12px', marginTop: '6px', color: description.length > 65535 ? 'var(--error)' : description.length > 55000 ? 'var(--warning, #111827)' : 'var(--neutral-400)' }}>
               {description.length.toLocaleString()} / 65,535 characters
             </p>
           </div>

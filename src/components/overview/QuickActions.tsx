@@ -1,5 +1,5 @@
 'use client';
-import { Trophy, Person, UserMultiple, Report, UserAdmin } from '@carbon/icons-react';
+import { Blog, EventSchedule, Bullhorn, UserMultiple, Image } from '@carbon/icons-react';
 import { useRouter } from 'next/navigation';
 
 interface QuickAction {
@@ -15,39 +15,39 @@ const QuickActions = () => {
 
   const actions: QuickAction[] = [
     {
-      label: 'Add Position',
-      icon: <Trophy size={20} />,
+      label: 'Add Post',
+      icon: <Blog size={20} />,
       bgColor: 'var(--primary-100)',
       iconColor: 'var(--primary-700)',
-      path: '/dashboard/campaign/positions/add',
+      path: '/dashboard/supporter-portal/posts/add',
     },
     {
-      label: 'Add Candidate',
-      icon: <Person size={20} />,
+      label: 'Add Event',
+      icon: <EventSchedule size={20} />,
       bgColor: 'var(--info-light)',
       iconColor: 'var(--info)',
-      path: '/dashboard/campaign/candidates/add',
+      path: '/dashboard/supporter-portal/events/add',
+    },
+    {
+      label: 'Add Announcement',
+      icon: <Bullhorn size={20} />,
+      bgColor: 'var(--success-light)',
+      iconColor: 'var(--success)',
+      path: '/dashboard/supporter-portal/announcements/add',
     },
     {
       label: 'Add Member',
       icon: <UserMultiple size={20} />,
-      bgColor: 'var(--success-light)',
-      iconColor: 'var(--success)',
-      path: '/dashboard/campaign/members/add',
-    },
-    {
-      label: 'Manage Users',
-      icon: <UserAdmin size={20} />,
       bgColor: 'var(--warning-light)',
       iconColor: 'var(--warning)',
-      path: '/dashboard/admin/users',
+      path: '/dashboard/supporter-portal/members/add',
     },
     {
-      label: 'Roles Overview',
-      icon: <Report size={20} />,
+      label: 'Add Gallery',
+      icon: <Image size={20} />,
       bgColor: 'var(--neutral-200)',
       iconColor: 'var(--neutral-700)',
-      path: '/dashboard/roles/overview',
+      path: '/dashboard/supporter-portal/gallery/add',
     },
   ];
 

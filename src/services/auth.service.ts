@@ -7,6 +7,26 @@ export interface LoginPayload {
   support_group_unique_id?: string;
 }
 
+export interface SignupPayload {
+  firstname: string;
+  middlename?: string;
+  lastname: string;
+  email: string;
+  phone_number?: string;
+  gender: string;
+  date_of_birth: string;
+  password: string;
+  confirmPassword: string;
+  nin?: string;
+  code?: string;
+}
+
+export interface SignupResponse {
+  success: boolean;
+  message: string;
+  data: { support_group_unique_id: string } | null;
+}
+
 export interface ACL {
   unique_id: string;
   user_unique_id: string;
@@ -47,6 +67,11 @@ export interface PasswordRecoveryPayload {
 export const authService = {
   login: async (payload: LoginPayload): Promise<LoginResponse> => {
     const response = await api.post('/auth/signin/via/email', payload);
+    return response.data;
+  },
+
+  portalSignup: async (payload: SignupPayload): Promise<SignupResponse> => {
+    const response = await api.post('/auth/portal/signup', payload);
     return response.data;
   },
 

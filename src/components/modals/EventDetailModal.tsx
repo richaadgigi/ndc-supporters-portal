@@ -49,7 +49,7 @@ const EventDetailModal = ({ event, canEdit, canDelete, onApprove, onDelete }: Ev
 
         <div className="xui-d-flex xui-grid-gap-half xui-mb-1" style={{ flexWrap: 'wrap' }}>
           <span style={{
-            backgroundColor: event.status === 1 ? 'var(--success)' : event.status === 2 ? 'var(--warning, #f59e0b)' : 'var(--error)',
+            backgroundColor: event.status === 1 ? 'var(--success)' : event.status === 2 ? 'var(--warning, #111827)' : 'var(--error)',
             color: '#fff', padding: '3px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 500,
           }}>
             {event.status === 1 ? 'Published' : event.status === 2 ? 'Pending' : 'Draft'}

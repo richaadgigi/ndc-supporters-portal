@@ -325,7 +325,7 @@ const Sidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
           {!collapsed ? (
             <>
               <div className="xui-d-flex xui-flex-ai-center xui-grid-gap-half">
-                <img src="/ndc-logo2.jpeg" alt="NDC" className="xui-img-[40px]" />
+                <img src="/tdm-logo.jpeg" alt="TDM" className="xui-img-[40px]" />
                 <span className="xui-font-sz-[14px] xui-font-w-700 xui-text-white">{APP_SHORT_NAME}</span>
               </div>
               <button

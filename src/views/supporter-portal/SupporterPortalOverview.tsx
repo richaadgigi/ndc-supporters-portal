@@ -47,13 +47,13 @@ const SupporterPortalOverview = () => {
           <div className="xui-d-grid xui-grid-col-2 xui-md-grid-col-4 xui-grid-gap-1">
             <MetricCard title="Announcements" value={stats.total_announcements} icon={<Bullhorn size={24} />} iconBgColor="var(--info-light)" iconColor="var(--info)" />
             <MetricCard title="Categories" value={stats.total_categories} icon={<Category size={24} />} iconBgColor="var(--primary-100)" iconColor="var(--primary-700)" />
-            <MetricCard title="Enquiries" value={stats.total_enquiries} icon={<Email size={24} />} iconBgColor="#fce7f3" iconColor="#ed3337" />
+            <MetricCard title="Enquiries" value={stats.total_enquiries} icon={<Email size={24} />} iconBgColor="#E0F3E9" iconColor="#111827" />
             <MetricCard title="Events" value={stats.total_events} icon={<EventSchedule size={24} />} iconBgColor="var(--success-light)" iconColor="var(--success)" />
-            <MetricCard title="FAQs" value={stats.total_faqs} icon={<Help size={24} />} iconBgColor="#fff7ed" iconColor="#f59e0b" />
+            <MetricCard title="FAQs" value={stats.total_faqs} icon={<Help size={24} />} iconBgColor="#E5E7EB" iconColor="#111827" />
             <MetricCard title="File Storage" value={stats.total_file_storage} icon={<FolderOpen size={24} />} iconBgColor="var(--neutral-100)" iconColor="var(--neutral-600)" />
             <MetricCard title="Gallery" value={stats.total_galleries} icon={<Image size={24} />} iconBgColor="var(--info-light)" iconColor="var(--info)" />
             <MetricCard title="Members" value={stats.total_members} icon={<UserMultiple size={24} />} iconBgColor="var(--primary-100)" iconColor="var(--primary-700)" />
-            <MetricCard title="Newsletter" value={stats.total_newsletters} icon={<Newsletter size={24} />} iconBgColor="#fce7f3" iconColor="#ed3337" />
+            <MetricCard title="Newsletter" value={stats.total_newsletters} icon={<Newsletter size={24} />} iconBgColor="#E0F3E9" iconColor="#111827" />
             <MetricCard title="Posts" value={stats.total_posts} icon={<Blog size={24} />} iconBgColor="var(--success-light)" iconColor="var(--success)" />
           </div>
         )}

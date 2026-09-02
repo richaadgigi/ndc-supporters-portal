@@ -90,7 +90,7 @@ const eventsService = {
   },
 
   add: async (data: Record<string, any>, params: Omit<PaginationParams, 'page' | 'size'>): Promise<EventResponse> => {
-    const response = await api.post(`/user/event/add?${buildQueryParams(params)}`, data);
+    const response = await api.post(`/portal/event/add?${buildQueryParams(params)}`, data);
     return response.data;
   },
 

@@ -130,7 +130,7 @@ const ViewPost = () => {
                   <div className="xui-d-flex xui-flex-jc-space-between xui-flex-ai-center">
                     <span className="xui-font-sz-80 xui-opacity-5">Status</span>
                     <span className="xui-font-sz-70 xui-font-w-500" style={{
-                      backgroundColor: item.approved_by ? 'var(--success)' : 'var(--warning, #f59e0b)',
+                      backgroundColor: item.approved_by ? 'var(--success)' : 'var(--warning, #111827)',
                       color: '#fff', padding: '3px 10px', borderRadius: '4px',
                     }}>
                       {item.approved_by ? 'Approved' : 'Pending'}

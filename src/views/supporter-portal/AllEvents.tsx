@@ -244,7 +244,7 @@ const AllEvents = () => {
 
                     {cellEvents.slice(0, MAX_CHIPS).map(ev => {
                       const approved = ev.approved_by !== null && ev.approved_by !== undefined;
-                      const evColor = approved ? 'var(--primary-600)' : '#d97706';
+                      const evColor = approved ? 'var(--primary-600)' : '#111827';
                       const isStart = toDateOnly(ev.start_date) === key;
                       const isEnd = !ev.end_date || toDateOnly(ev.end_date) === key;
                       const isMultiDay = ev.end_date && toDateOnly(ev.end_date) !== toDateOnly(ev.start_date);

@@ -68,7 +68,7 @@ const postsService = {
   },
 
   getOne: async (unique_id: string, params: Omit<PaginationParams, 'page' | 'size'>): Promise<PostResponse> => {
-    const response = await api.get(`/user/post?${buildQueryParams({ unique_id, ...params })}`);
+    const response = await api.get(`/portal/post?${buildQueryParams({ unique_id, ...params })}`);
     return response.data;
   },
 

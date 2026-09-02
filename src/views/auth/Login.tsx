@@ -154,7 +154,7 @@ const Login = () => {
 
   return (
     <div className="xui-max-w-[360px] xui-w-fluid-100 xui-mx-auto">
-      <img src="/ndc-logo2.jpeg" alt="NDC" style={{ width: '80px', height: 'auto' }} />
+      <img src="/tdm-logo.jpeg" alt="TDM" style={{ width: '80px', height: 'auto' }} />
 
       <div className="xui-mt-2 xui-md-mt-4">
         {otpRequired ? (
@@ -315,6 +315,13 @@ const Login = () => {
                   {isLoading ? 'Signing In...' : 'Sign In'}
                 </button>
               </div>
+
+              {loginType === 'member' && (
+                <p className="xui-font-sz-[13px] xui-text-center">
+                  <span className="xui-opacity-5">Don&apos;t have an account? </span>
+                  <Link href="/signup" style={{ color: 'var(--primary-600)' }}>Sign up</Link>
+                </p>
+              )}
             </form>
           </>
         )}

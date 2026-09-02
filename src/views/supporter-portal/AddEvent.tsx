@@ -114,7 +114,7 @@ const AddEvent = () => {
               <div className="xui-form-box">
                 <label>Description *</label>
                 <QuillEditor value={description} onChange={setDescription} />
-                <p style={{ fontSize: '12px', marginTop: '6px', color: description.length > 4294967295 ? 'var(--error)' : description.length > 4000000000 ? 'var(--warning, #f59e0b)' : 'var(--neutral-400)' }}>
+                <p style={{ fontSize: '12px', marginTop: '6px', color: description.length > 4294967295 ? 'var(--error)' : description.length > 4000000000 ? 'var(--warning, #111827)' : 'var(--neutral-400)' }}>
                   {description.length.toLocaleString()} / 4,294,967,295 characters
                 </p>
               </div>
