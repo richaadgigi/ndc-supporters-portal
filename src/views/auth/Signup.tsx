@@ -244,7 +244,7 @@ const Signup = () => {
           </div>
 
           <div style={{ display: step === 1 ? 'block' : 'none' }}>
-            <div className="xui-d-grid xui-grid-col-1 xui-lg-grid-col-2 xui-grid-gap-1">
+            <div className={`xui-d-grid xui-grid-gap-1 ${isNigeria ? 'xui-grid-col-1 xui-lg-grid-col-2' : 'xui-grid-col-1'}`}>
               <div className="xui-form-box" {...(errors.country && { 'xui-error': 'true' })}>
                 <label htmlFor="country">Country</label>
                 <SearchableSelect
@@ -281,7 +281,7 @@ const Signup = () => {
               )}
             </div>
 
-            <div className="xui-d-grid xui-grid-col-1 xui-lg-grid-col-2 xui-grid-gap-1">
+            <div className={`xui-d-grid xui-grid-gap-1 ${isNigeria ? 'xui-grid-col-1 xui-lg-grid-col-2' : 'xui-grid-col-1'}`}>
               {isNigeria ? (
                 <div className="xui-form-box" {...(errors.lga && { 'xui-error': 'true' })}>
                   <label htmlFor="lga">LGA</label>
