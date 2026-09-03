@@ -11,3 +11,4 @@ export { default as FilterModal } from './FilterModal';
 export type { FilterField, FilterOption, FilterValues } from './FilterModal';
 export { default as DateOfBirthSelect } from './DateOfBirthSelect';
 export { default as PhoneNumberInput } from './PhoneNumberInput';
+export { default as SearchableSelect } from './SearchableSelect';
