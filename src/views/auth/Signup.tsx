@@ -8,8 +8,9 @@ import { APP_NAME } from '../../Globals';
 import authService from '../../services/auth.service';
 import geographyService from '../../services/geography.service';
 import type { GeoItem } from '../../services/geography.service';
-import { Alert, showAlert, PhoneNumberInput, DateOfBirthSelect } from '../../components/common';
+import { Alert, showAlert, PhoneNumberInput, DateOfBirthSelect, SearchableSelect } from '../../components/common';
 import { extractErrorMessage } from '../../utils/formatters';
+import { COUNTRIES } from '../../utils/countries';
 
 interface SignupFormData {
   firstname: string;
@@ -61,6 +62,18 @@ const Signup = () => {
   });
 
   const passwordValue = watch('password');
+  const isNigeria = (watch('country') || '').trim().toLowerCase() === 'nigeria';
+
+  const onCountryChange = (val: string) => {
+    setValue('country', val);
+    setStateId('');
+    setLgaId('');
+    setZone('');
+    setValue('state', '');
+    setValue('lga', '');
+    setValue('ward', '');
+    setValue('constituency', '');
+  };
 
   useEffect(() => {
     geographyService.getStates().then(setStates).catch(() => {});
@@ -231,62 +244,90 @@ const Signup = () => {
           </div>
 
           <div style={{ display: step === 1 ? 'block' : 'none' }}>
-            <div className="xui-d-grid xui-grid-col-1 xui-lg-grid-col-2 xui-grid-gap-1">
+            <div className={`xui-d-grid xui-grid-gap-1 ${isNigeria ? 'xui-grid-col-1 xui-lg-grid-col-2' : 'xui-grid-col-1'}`}>
               <div className="xui-form-box" {...(errors.country && { 'xui-error': 'true' })}>
                 <label htmlFor="country">Country</label>
-                <input type="text" id="country" placeholder="Enter country"
-                  {...register('country', { maxLength: { value: 50, message: 'Maximum 50 characters' } })} />
+                <SearchableSelect
+                  id="country"
+                  value={watch('country')}
+                  options={COUNTRIES}
+                  placeholder="Select your country"
+                  searchPlaceholder="Search country..."
+                  onChange={onCountryChange}
+                />
+                <input type="hidden" {...register('country', { maxLength: { value: 50, message: 'Maximum 50 characters' } })} />
                 {errors.country && <span className="message">{errors.country.message}</span>}
               </div>
 
-              <div className="xui-form-box" {...(errors.state && { 'xui-error': 'true' })}>
-                <label htmlFor="state">State *</label>
-                <select id="state" value={stateId} onChange={(e) => onStateChange(e.target.value)}>
-                  <option value="">Select your state</option>
-                  {states.map((s) => (
-                    <option key={s.id} value={String(s.id)}>{s.name}</option>
-                  ))}
-                </select>
-                <input type="hidden" {...register('state', { required: 'State is required' })} />
-                {errors.state && <span className="message">{errors.state.message}</span>}
-              </div>
+              {isNigeria ? (
+                <div className="xui-form-box" {...(errors.state && { 'xui-error': 'true' })}>
+                  <label htmlFor="state">State</label>
+                  <select id="state" value={stateId} onChange={(e) => onStateChange(e.target.value)}>
+                    <option value="">Select your state</option>
+                    {states.map((st) => (
+                      <option key={st.id} value={String(st.id)}>{st.name}</option>
+                    ))}
+                  </select>
+                  <input type="hidden" {...register('state')} />
+                  {errors.state && <span className="message">{errors.state.message}</span>}
+                </div>
+              ) : (
+                <div className="xui-form-box" {...(errors.state && { 'xui-error': 'true' })}>
+                  <label htmlFor="state">State / Province</label>
+                  <input type="text" id="state" placeholder="Enter your state or province"
+                    {...register('state', { maxLength: { value: 100, message: 'Maximum 100 characters' } })} />
+                  {errors.state && <span className="message">{errors.state.message}</span>}
+                </div>
+              )}
             </div>
 
-            <div className="xui-d-grid xui-grid-col-1 xui-lg-grid-col-2 xui-grid-gap-1">
-              <div className="xui-form-box" {...(errors.lga && { 'xui-error': 'true' })}>
-                <label htmlFor="lga">LGA *</label>
-                <select id="lga" value={lgaId} onChange={(e) => onLgaChange(e.target.value)} disabled={!stateId}>
-                  <option value="">{stateId ? 'Select your LGA' : 'Select a state first'}</option>
-                  {lgas.map((l) => (
-                    <option key={l.id} value={String(l.id)}>{l.name}</option>
-                  ))}
-                </select>
-                <input type="hidden" {...register('lga', { required: 'LGA is required' })} />
-                {errors.lga && <span className="message">{errors.lga.message}</span>}
-              </div>
+            <div className={`xui-d-grid xui-grid-gap-1 ${isNigeria ? 'xui-grid-col-1 xui-lg-grid-col-2' : 'xui-grid-col-1'}`}>
+              {isNigeria ? (
+                <div className="xui-form-box" {...(errors.lga && { 'xui-error': 'true' })}>
+                  <label htmlFor="lga">LGA</label>
+                  <select id="lga" value={lgaId} onChange={(e) => onLgaChange(e.target.value)} disabled={!stateId}>
+                    <option value="">{stateId ? 'Select your LGA' : 'Select a state first'}</option>
+                    {lgas.map((l) => (
+                      <option key={l.id} value={String(l.id)}>{l.name}</option>
+                    ))}
+                  </select>
+                  <input type="hidden" {...register('lga')} />
+                  {errors.lga && <span className="message">{errors.lga.message}</span>}
+                </div>
+              ) : (
+                <div className="xui-form-box" {...(errors.lga && { 'xui-error': 'true' })}>
+                  <label htmlFor="lga">City</label>
+                  <input type="text" id="lga" placeholder="Enter your city"
+                    {...register('lga', { maxLength: { value: 100, message: 'Maximum 100 characters' } })} />
+                  {errors.lga && <span className="message">{errors.lga.message}</span>}
+                </div>
+              )}
 
+              {isNigeria && (
+                <div className="xui-form-box">
+                  <label htmlFor="ward">Ward</label>
+                  <select id="ward" value={watch('ward')} onChange={(e) => setValue('ward', e.target.value)} disabled={!lgaId}>
+                    <option value="">{lgaId ? 'Select your ward' : 'Select an LGA first'}</option>
+                    {wards.map((w) => (
+                      <option key={w.id} value={w.name}>{w.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {isNigeria && (
               <div className="xui-form-box">
-                <label htmlFor="ward">Ward</label>
-                <select id="ward" value={watch('ward')} onChange={(e) => setValue('ward', e.target.value)} disabled={!lgaId}>
-                  <option value="">{lgaId ? 'Select your ward' : 'Select an LGA first'}</option>
-                  {wards.map((w) => (
-                    <option key={w.id} value={w.name}>{w.name}</option>
+                <label htmlFor="constituency">Constituency</label>
+                <select id="constituency" value={watch('constituency')} onChange={(e) => setValue('constituency', e.target.value)} disabled={!stateId}>
+                  <option value="">{stateId ? 'Select your constituency' : 'Select a state first'}</option>
+                  {constituencies.map((c) => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
                   ))}
                 </select>
               </div>
-            </div>
-
-            <div className="xui-form-box">
-              <label htmlFor="constituency">Constituency</label>
-              <select id="constituency" value={watch('constituency')} onChange={(e) => setValue('constituency', e.target.value)} disabled={!stateId}>
-                <option value="">{stateId ? 'Select your constituency' : 'Select a state first'}</option>
-                {constituencies.map((c) => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
-              </select>
-            </div>
+            )}
           </div>
-
           <div style={{ display: step === 2 ? 'block' : 'none' }}>
             <div className="xui-form-box" {...(errors.email && { 'xui-error': 'true' })}>
               <label htmlFor="email">Email *</label>
