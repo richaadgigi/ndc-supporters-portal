@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const TARGET = (process.env.NEXT_PUBLIC_GEO_API_URL ?? '').replace(/\/+$/, '');
-const API_KEY = process.env.NEXT_PUBLIC_GEO_API_KEY ?? '';
-const USERNAME = process.env.NEXT_PUBLIC_GEO_API_USERNAME ?? '';
+const TARGET = (process.env.GEO_API_URL ?? process.env.NEXT_PUBLIC_GEO_API_URL ?? '').replace(/\/+$/, '');
+const API_KEY = process.env.GEO_API_KEY ?? process.env.NEXT_PUBLIC_GEO_API_KEY ?? '';
+const USERNAME = process.env.GEO_API_USERNAME ?? process.env.NEXT_PUBLIC_GEO_API_USERNAME ?? '';
 
 export async function GET(req: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   if (!TARGET || !API_KEY || !USERNAME) {
