@@ -25,10 +25,11 @@ const UpdateDemography = ({ profile, onSuccess, setError, setSuccessMessage }: U
   const [states, setStates] = useState<GeoItem[]>([]);
   const [lgas, setLgas] = useState<GeoItem[]>([]);
   const [wards, setWards] = useState<GeoItem[]>([]);
-  const [constituencies, setConstituencies] = useState<GeoItem[]>([]);
+  const [pollingUnits, setPollingUnits] = useState<GeoItem[]>([]);
 
   const [stateId, setStateId] = useState('');
   const [lgaId, setLgaId] = useState('');
+  const [wardId, setWardId] = useState('');
   const [zone, setZone] = useState('');
   const [state, setState] = useState('');
   const [lga, setLga] = useState('');
@@ -54,9 +55,8 @@ const UpdateDemography = ({ profile, onSuccess, setError, setSuccessMessage }: U
   }, [profile, states]);
 
   useEffect(() => {
-    if (!stateId) { setLgas([]); setConstituencies([]); return; }
+    if (!stateId) { setLgas([]); return; }
     geographyService.getLgas(stateId).then(setLgas).catch(() => setLgas([]));
-    geographyService.getConstituencies(stateId).then(setConstituencies).catch(() => setConstituencies([]));
   }, [stateId]);
 
   useEffect(() => {
@@ -73,10 +73,22 @@ const UpdateDemography = ({ profile, onSuccess, setError, setSuccessMessage }: U
     geographyService.getWards(lgaId).then(setWards).catch(() => setWards([]));
   }, [lgaId]);
 
+  useEffect(() => {
+    if (wards.length === 0 || !profile?.ward || wardId) return;
+    const matchedWard = matchByName(wards, profile.ward);
+    if (matchedWard) setWardId(String(matchedWard.id));
+  }, [wards, profile?.ward, wardId]);
+
+  useEffect(() => {
+    if (!wardId) { setPollingUnits([]); return; }
+    geographyService.getPollingUnits(wardId).then(setPollingUnits).catch(() => setPollingUnits([]));
+  }, [wardId]);
+
   const onStateChange = (id: string) => {
     const picked = states.find((s) => String(s.id) === id);
     setStateId(id);
     setLgaId('');
+    setWardId('');
     setState(picked?.name || '');
     setZone(picked?.region || '');
     setLga('');
@@ -87,8 +99,17 @@ const UpdateDemography = ({ profile, onSuccess, setError, setSuccessMessage }: U
   const onLgaChange = (id: string) => {
     const picked = lgas.find((l) => String(l.id) === id);
     setLgaId(id);
+    setWardId('');
     setLga(picked?.name || '');
     setWard('');
+    setConstituency('');
+  };
+
+  const onWardChange = (id: string) => {
+    const picked = wards.find((w) => String(w.id) === id);
+    setWardId(id);
+    setWard(picked?.name || '');
+    setConstituency('');
   };
 
   const onSave = async () => {
@@ -151,20 +172,20 @@ const UpdateDemography = ({ profile, onSuccess, setError, setSuccessMessage }: U
         <div className="xui-d-grid xui-grid-col-1 xui-lg-grid-col-2 xui-grid-gap-1">
           <div className="xui-form-box">
             <label htmlFor="demo_ward">Ward</label>
-            <select id="demo_ward" value={ward} onChange={(e) => setWard(e.target.value)} disabled={!lgaId}>
+            <select id="demo_ward" value={wardId} onChange={(e) => onWardChange(e.target.value)} disabled={!lgaId}>
               <option value="">{lgaId ? 'Select your ward' : 'Select an LGA first'}</option>
               {wards.map((w) => (
-                <option key={w.id} value={w.name}>{w.name}</option>
+                <option key={w.id} value={String(w.id)}>{w.name}</option>
               ))}
             </select>
           </div>
 
           <div className="xui-form-box">
-            <label htmlFor="demo_constituency">Constituency</label>
-            <select id="demo_constituency" value={constituency} onChange={(e) => setConstituency(e.target.value)} disabled={!stateId}>
-              <option value="">{stateId ? 'Select your constituency' : 'Select a state first'}</option>
-              {constituencies.map((c) => (
-                <option key={c.id} value={c.name}>{c.name}</option>
+            <label htmlFor="demo_constituency">Polling Unit</label>
+            <select id="demo_constituency" value={constituency} onChange={(e) => setConstituency(e.target.value)} disabled={!wardId}>
+              <option value="">{wardId ? 'Select your polling unit' : 'Select a ward first'}</option>
+              {pollingUnits.map((pu) => (
+                <option key={pu.id} value={pu.name}>{pu.name}</option>
               ))}
             </select>
           </div>

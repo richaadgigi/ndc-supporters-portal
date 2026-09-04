@@ -48,9 +48,10 @@ const Signup = () => {
   const [states, setStates] = useState<GeoItem[]>([]);
   const [lgas, setLgas] = useState<GeoItem[]>([]);
   const [wards, setWards] = useState<GeoItem[]>([]);
-  const [constituencies, setConstituencies] = useState<GeoItem[]>([]);
+  const [pollingUnits, setPollingUnits] = useState<GeoItem[]>([]);
   const [stateId, setStateId] = useState('');
   const [lgaId, setLgaId] = useState('');
+  const [wardId, setWardId] = useState('');
   const [zone, setZone] = useState('');
 
   const { register, control, handleSubmit, watch, setValue, trigger, formState: { errors } } = useForm<SignupFormData>({
@@ -68,6 +69,7 @@ const Signup = () => {
     setValue('country', val);
     setStateId('');
     setLgaId('');
+    setWardId('');
     setZone('');
     setValue('state', '');
     setValue('lga', '');
@@ -80,9 +82,8 @@ const Signup = () => {
   }, []);
 
   useEffect(() => {
-    if (!stateId) { setLgas([]); setConstituencies([]); return; }
+    if (!stateId) { setLgas([]); return; }
     geographyService.getLgas(stateId).then(setLgas).catch(() => setLgas([]));
-    geographyService.getConstituencies(stateId).then(setConstituencies).catch(() => setConstituencies([]));
   }, [stateId]);
 
   useEffect(() => {
@@ -90,10 +91,16 @@ const Signup = () => {
     geographyService.getWards(lgaId).then(setWards).catch(() => setWards([]));
   }, [lgaId]);
 
+  useEffect(() => {
+    if (!wardId) { setPollingUnits([]); return; }
+    geographyService.getPollingUnits(wardId).then(setPollingUnits).catch(() => setPollingUnits([]));
+  }, [wardId]);
+
   const onStateChange = (id: string) => {
     const picked = states.find(s => String(s.id) === id);
     setStateId(id);
     setLgaId('');
+    setWardId('');
     setValue('state', picked?.name || '');
     setValue('lga', '');
     setValue('ward', '');
@@ -104,8 +111,17 @@ const Signup = () => {
   const onLgaChange = (id: string) => {
     const picked = lgas.find(l => String(l.id) === id);
     setLgaId(id);
+    setWardId('');
     setValue('lga', picked?.name || '');
     setValue('ward', '');
+    setValue('constituency', '');
+  };
+
+  const onWardChange = (id: string) => {
+    const picked = wards.find(w => String(w.id) === id);
+    setWardId(id);
+    setValue('ward', picked?.name || '');
+    setValue('constituency', '');
   };
 
   const next = async () => {
@@ -306,10 +322,10 @@ const Signup = () => {
               {isNigeria && (
                 <div className="xui-form-box">
                   <label htmlFor="ward">Ward</label>
-                  <select id="ward" value={watch('ward')} onChange={(e) => setValue('ward', e.target.value)} disabled={!lgaId}>
+                  <select id="ward" value={wardId} onChange={(e) => onWardChange(e.target.value)} disabled={!lgaId}>
                     <option value="">{lgaId ? 'Select your ward' : 'Select an LGA first'}</option>
                     {wards.map((w) => (
-                      <option key={w.id} value={w.name}>{w.name}</option>
+                      <option key={w.id} value={String(w.id)}>{w.name}</option>
                     ))}
                   </select>
                 </div>
@@ -318,11 +334,11 @@ const Signup = () => {
 
             {isNigeria && (
               <div className="xui-form-box">
-                <label htmlFor="constituency">Constituency</label>
-                <select id="constituency" value={watch('constituency')} onChange={(e) => setValue('constituency', e.target.value)} disabled={!stateId}>
-                  <option value="">{stateId ? 'Select your constituency' : 'Select a state first'}</option>
-                  {constituencies.map((c) => (
-                    <option key={c.id} value={c.name}>{c.name}</option>
+                <label htmlFor="constituency">Polling Unit</label>
+                <select id="constituency" value={watch('constituency')} onChange={(e) => setValue('constituency', e.target.value)} disabled={!wardId}>
+                  <option value="">{wardId ? 'Select your polling unit' : 'Select a ward first'}</option>
+                  {pollingUnits.map((pu) => (
+                    <option key={pu.id} value={pu.name}>{pu.name}</option>
                   ))}
                 </select>
               </div>
