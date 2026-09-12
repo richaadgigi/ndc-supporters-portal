@@ -9,6 +9,8 @@ import authService from '../../services/auth.service';
 import membersService from '../../services/members.service';
 import type { Member } from '../../services/members.service';
 import UpdateDemography from '../../components/profile/UpdateDemography';
+import ReferralCard from '../../components/profile/ReferralCard';
+import UpdateEmail from '../../components/profile/UpdateEmail';
 
 interface PasswordFormData {
   oldPassword: string;
@@ -224,12 +226,25 @@ export default function Profile() {
         </div>
 
         <div className="xui-mt-1-half">
+          <UpdateEmail
+            currentEmail={profile?.User?.email || ''}
+            onSuccess={loadProfile}
+            setError={setErrorMessage}
+            setSuccessMessage={setSuccessMessage}
+          />
+        </div>
+
+        <div className="xui-mt-1-half">
           <UpdateDemography
             profile={profile}
             onSuccess={loadProfile}
             setError={setErrorMessage}
             setSuccessMessage={setSuccessMessage}
           />
+        </div>
+
+        <div className="xui-mt-1-half">
+          <ReferralCard />
         </div>
       </div>
 

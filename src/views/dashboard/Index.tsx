@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Navbar } from '../../components/layout';
 import { QuickActions } from '../../components/overview';
+import ReferralCard from '../../components/profile/ReferralCard';
 import { useGeneral } from '../../context/GeneralContext';
 import membersService from '../../services/members.service';
 import type { Member } from '../../services/members.service';
@@ -110,6 +111,10 @@ const Dashboard = () => {
             </div>
           </div>
         )}
+
+        <div className="xui-mb-2">
+          <ReferralCard />
+        </div>
 
         <QuickActions />
 

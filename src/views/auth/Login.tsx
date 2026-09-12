@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -7,16 +7,13 @@ import { View, ViewOff, ArrowLeft } from '@carbon/icons-react';
 import { APP_NAME } from '../../Globals';
 import { useGeneral } from '../../context/GeneralContext';
 import authService from '../../services/auth.service';
-import supportGroupsService from '../../services/supportGroups.service';
-import type { SupportGroup } from '../../services/supportGroups.service';
-import { Alert, showAlert } from '../../components/common';
-import { extractErrorMessage } from '../../utils/formatters';
+import { Alert, showAlert, PhoneNumberInput } from '../../components/common';
+import { extractErrorMessage, sanitizePhoneNumber } from '../../utils/formatters';
 
 interface LoginFormData {
-  email: string;
+  login_id: string;
   password: string;
   remember_me?: boolean;
-  support_group_unique_id?: string;
 }
 
 const Login = () => {
@@ -28,50 +25,44 @@ const Login = () => {
   const [successMessage, setSuccessMessage] = useState('');
 
   const [otpRequired, setOtpRequired] = useState(false);
-  const [otpEmail, setOtpEmail] = useState('');
+  const [otpLoginId, setOtpLoginId] = useState('');
   const [otp, setOtp] = useState('');
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [supportGroups, setSupportGroups] = useState<SupportGroup[]>([]);
-  const [otpGroupId, setOtpGroupId] = useState('');
-
-  useEffect(() => {
-    if (supportGroups.length > 0) return;
-    supportGroupsService.publicGetAll({ size: 500 })
-      .then(res => { if (res.success && res.data) setSupportGroups(Array.isArray(res.data) ? res.data : (res.data as any).rows || []); })
-      .catch(() => {});
-  }, [supportGroups.length]);
+  const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
 
   const {
     register,
+    control,
+    unregister,
+    setValue,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormData>({ defaultValues: { remember_me: false } });
+  } = useForm<LoginFormData>({ defaultValues: { login_id: '', password: '', remember_me: false } });
+
+  const completeLogin = (loginId: string, data: { token: string; fullname: string; acls?: any[] }, remember: boolean) => {
+    const email = loginId.includes('@') ? loginId : undefined;
+    login(data.token, { fullname: data.fullname, email }, data.acls ?? [], null, remember, 'portal');
+    router.push('/dashboard');
+  };
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
+    const loginId = loginMethod === 'phone' ? sanitizePhoneNumber(data.login_id) : data.login_id.trim().toLowerCase();
     try {
-      const payload = {
-        email: data.email,
+      const response = await authService.memberSignin({
+        login_id: loginId,
         password: data.password,
         remember_me: data.remember_me,
-        support_group_unique_id: data.support_group_unique_id,
-      };
-      const response = await authService.memberLogin(payload);
+      });
 
       if (response.success && response.data) {
-        const { token, fullname, email, profile_image, acls, support_group_unique_id } = response.data;
-        const groupId = support_group_unique_id ?? data.support_group_unique_id ?? null;
         setSuccessMessage('Login successful! Redirecting...');
         showAlert('success-alert');
-        setTimeout(() => {
-          login(token, { fullname, email, profile_image }, acls ?? [], groupId, data.remember_me, 'portal');
-          router.push('/dashboard');
-        }, 1500);
+        setTimeout(() => completeLogin(loginId, response.data as any, data.remember_me ?? false), 1500);
       } else if (response.success && !response.data) {
         setOtpRequired(true);
-        setOtpEmail(data.email);
-        setOtpGroupId(data.support_group_unique_id ?? '');
+        setOtpLoginId(loginId);
         setRememberMe(data.remember_me ?? false);
         setSuccessMessage(response.message || 'OTP sent to your email');
         showAlert('success-alert');
@@ -97,23 +88,12 @@ const Login = () => {
     }
     setVerifyingOtp(true);
     try {
-      const payload = {
-        email: otpEmail,
-        otp,
-        remember_me: rememberMe,
-        support_group_unique_id: otpGroupId,
-      };
-      const response = await authService.verifySupportGroupMemberOtp(payload);
+      const response = await authService.memberVerifyOtp({ login_id: otpLoginId, otp, remember_me: rememberMe });
 
       if (response.success && response.data) {
-        const { token, fullname, email, profile_image, acls, support_group_unique_id } = response.data;
-        const groupId = support_group_unique_id ?? otpGroupId ?? null;
         setSuccessMessage('OTP verified! Redirecting...');
         showAlert('success-alert');
-        setTimeout(() => {
-          login(token, { fullname, email, profile_image }, acls ?? [], groupId, rememberMe, 'portal');
-          router.push('/dashboard');
-        }, 1500);
+        setTimeout(() => completeLogin(otpLoginId, response.data as any, rememberMe), 1500);
       } else {
         setErrorMessage(response.message || 'OTP verification failed');
         showAlert('error-alert');
@@ -129,7 +109,7 @@ const Login = () => {
   const handleBackToLogin = () => {
     setOtpRequired(false);
     setOtp('');
-    setOtpEmail('');
+    setOtpLoginId('');
     setIsLoading(false);
     setVerifyingOtp(false);
   };
@@ -189,35 +169,51 @@ const Login = () => {
             </p>
 
             <form onSubmit={handleSubmit(onSubmit)} className="xui-form">
-              <div className="xui-form-box">
-                <label htmlFor="support_group_unique_id">Support Group</label>
-                <select
-                  id="support_group_unique_id"
-                  {...register('support_group_unique_id', { required: 'Select your support group' })}
+              <div className="xui-d-flex xui-flex-ai-center xui-grid-gap-half xui-mb-1">
+                <button
+                  type="button"
+                  className="xui-btn xui-font-sz-[12px] xui-py-[8px] xui-px-[16px]"
+                  style={{
+                    backgroundColor: loginMethod === 'email' ? 'var(--primary-600)' : 'transparent',
+                    color: loginMethod === 'email' ? '#fff' : 'var(--neutral-500)',
+                    border: loginMethod === 'email' ? 'none' : '1px solid var(--neutral-300)',
+                    borderRadius: '8px',
+                  }}
+                  onClick={() => { unregister('login_id'); setLoginMethod('email'); setValue('login_id', ''); }}
                 >
-                  <option value="">Select your support group</option>
-                  {supportGroups.map((g) => (
-                    <option key={g.unique_id} value={g.unique_id}>
-                      {g.name}{g.state ? ` - ${g.state}` : ''}
-                    </option>
-                  ))}
-                </select>
-                {errors.support_group_unique_id && (
-                  <span className="xui-font-sz-80 xui-text-red">{errors.support_group_unique_id.message}</span>
-                )}
+                  Email
+                </button>
+                <button
+                  type="button"
+                  className="xui-btn xui-font-sz-[12px] xui-py-[8px] xui-px-[16px]"
+                  style={{
+                    backgroundColor: loginMethod === 'phone' ? 'var(--primary-600)' : 'transparent',
+                    color: loginMethod === 'phone' ? '#fff' : 'var(--neutral-500)',
+                    border: loginMethod === 'phone' ? 'none' : '1px solid var(--neutral-300)',
+                    borderRadius: '8px',
+                  }}
+                  onClick={() => { unregister('login_id'); setLoginMethod('phone'); setValue('login_id', ''); }}
+                >
+                  Phone Number
+                </button>
               </div>
 
-              <div className="xui-form-box">
-                <label htmlFor="email">Email</label>
-                <input
-                  type="email"
-                  id="email"
-                  {...register('email', { required: 'Email is required' })}
-                />
-                {errors.email && (
-                  <span className="xui-font-sz-80 xui-text-red">{errors.email.message}</span>
-                )}
-              </div>
+              {loginMethod === 'email' ? (
+                <div key="email-input" className="xui-form-box" {...(errors.login_id && { 'xui-error': 'true' })}>
+                  <label htmlFor="login_id_email">Email</label>
+                  <input
+                    type="email"
+                    id="login_id_email"
+                    placeholder="Enter your email"
+                    {...register('login_id', { required: 'Email is required' })}
+                  />
+                  {errors.login_id && (
+                    <span className="message">{errors.login_id.message}</span>
+                  )}
+                </div>
+              ) : (
+                <PhoneNumberInput key="phone-input" control={control} name="login_id" label="Phone Number" id="login_id_phone" required />
+              )}
 
               <div className="xui-form-box">
                 <label htmlFor="password">Password</label>

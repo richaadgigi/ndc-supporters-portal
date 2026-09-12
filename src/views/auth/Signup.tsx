@@ -8,7 +8,7 @@ import { APP_NAME } from '../../Globals';
 import authService from '../../services/auth.service';
 import geographyService from '../../services/geography.service';
 import type { GeoItem } from '../../services/geography.service';
-import { Alert, showAlert, PhoneNumberInput, DateOfBirthSelect, SearchableSelect } from '../../components/common';
+import { Alert, showAlert, PhoneNumberInput, DateOfBirthSelect, SearchableSelect, ImageUpload } from '../../components/common';
 import { extractErrorMessage } from '../../utils/formatters';
 import { COUNTRIES } from '../../utils/countries';
 
@@ -53,6 +53,14 @@ const Signup = () => {
   const [lgaId, setLgaId] = useState('');
   const [wardId, setWardId] = useState('');
   const [zone, setZone] = useState('');
+  const [profileImage, setProfileImage] = useState('');
+  const [profileImagePublicId, setProfileImagePublicId] = useState('');
+  const [refId, setRefId] = useState('');
+
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get('ref_id');
+    if (ref && ref.trim()) setRefId(ref.trim());
+  }, []);
 
   const { register, control, handleSubmit, watch, setValue, trigger, formState: { errors } } = useForm<SignupFormData>({
     defaultValues: {
@@ -137,8 +145,10 @@ const Signup = () => {
         firstname: data.firstname.trim(),
         ...(data.middlename.trim() && { middlename: data.middlename.trim() }),
         lastname: data.lastname.trim(),
-        email: data.email.trim(),
+        ...(data.email.trim() && { email: data.email.trim() }),
         ...(data.phone_number && { phone_number: data.phone_number }),
+        ...(profileImage && { profile_image: profileImage, profile_image_public_id: profileImagePublicId }),
+        ...(refId && { ref_id: refId }),
         gender: data.gender,
         date_of_birth: data.date_of_birth,
         ...(data.nin.trim() && { nin: data.nin.trim() }),
@@ -211,6 +221,17 @@ const Signup = () => {
 
         <form onSubmit={handleSubmit(onSubmit)} className="xui-form">
           <div style={{ display: step === 0 ? 'block' : 'none' }}>
+            <div className="xui-form-box">
+              <ImageUpload
+                label="Profile Photo"
+                value={profileImage}
+                publicId={profileImagePublicId}
+                onChange={(url, pubId) => { setProfileImage(url); setProfileImagePublicId(pubId); }}
+                onError={(msg) => { setErrorMessage(msg); showAlert('error-alert'); }}
+                folder="ndcsupporters/members"
+              />
+            </div>
+
             <div className="xui-d-grid xui-grid-col-1 xui-lg-grid-col-2 xui-grid-gap-1">
               <div className="xui-form-box" {...(errors.firstname && { 'xui-error': 'true' })}>
                 <label htmlFor="firstname">First Name *</label>
@@ -346,13 +367,19 @@ const Signup = () => {
           </div>
           <div style={{ display: step === 2 ? 'block' : 'none' }}>
             <div className="xui-form-box" {...(errors.email && { 'xui-error': 'true' })}>
-              <label htmlFor="email">Email *</label>
+              <label htmlFor="email">Email</label>
               <input type="email" id="email" placeholder="Enter email address"
-                {...register('email', { required: 'Email is required', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Invalid email format' } })} />
+                {...register('email', {
+                  pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Invalid email format' },
+                  validate: (value) => (value.trim() !== '' || !!watch('phone_number')) || 'Enter an email or a phone number',
+                })} />
               {errors.email && <span className="message">{errors.email.message}</span>}
             </div>
 
             <PhoneNumberInput control={control} name="phone_number" label="Phone Number" id="phone_number" />
+            <p className="xui-font-sz-80 xui-opacity-5" style={{ margin: '-8px 0 16px' }}>
+              Provide at least one: an email or a phone number. You can sign in with either.
+            </p>
 
             <div className="xui-form-box" {...(errors.password && { 'xui-error': 'true' })}>
               <label htmlFor="password">Password *</label>

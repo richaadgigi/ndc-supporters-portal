@@ -11,6 +11,10 @@ export const formatNumber = (num: number): string => {
   return num.toLocaleString('en-NG');
 };
 
+export const sanitizePhoneNumber = (phone: string): string => {
+  return phone.replace(/\s+/g, '').replace(/^\+/, '');
+};
+
 export const formatCompactNumber = (num: number): string => {
   if (num >= 1000000000) {
     const val = num / 1000000000;

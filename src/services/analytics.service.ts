@@ -107,6 +107,7 @@ export interface SupportGroupPortalStats {
   total_newsletters_via_subscription: { subscription: boolean; total_count: number }[];
   total_posts_via_category: { Category: { name: string; stripped: string } | null; total_count: number }[];
   total_members_via_member_role: { MemberRole: { name: string; stripped: string } | null; total_count: number }[];
+  total_ref_members?: number;
 }
 
 export interface SupportGroupPortalStatsResponse {

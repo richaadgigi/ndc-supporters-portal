@@ -11,7 +11,7 @@ export interface SignupPayload {
   firstname: string;
   middlename?: string;
   lastname: string;
-  email: string;
+  email?: string;
   phone_number?: string;
   gender: string;
   date_of_birth: string;
@@ -25,6 +25,9 @@ export interface SignupPayload {
   lga?: string;
   ward?: string;
   constituency?: string;
+  profile_image?: string;
+  profile_image_public_id?: string;
+  ref_id?: string;
 }
 
 export interface SignupResponse {
@@ -81,6 +84,16 @@ export const authService = {
     return response.data;
   },
 
+  memberSignin: async (payload: { login_id: string; password: string; remember_me?: boolean }): Promise<LoginResponse> => {
+    const response = await api.post('/auth/portal/signin', payload);
+    return response.data;
+  },
+
+  memberVerifyOtp: async (payload: { login_id: string; otp: string; remember_me?: boolean }): Promise<LoginResponse> => {
+    const response = await api.post('/auth/portal/otp/verify', payload);
+    return response.data;
+  },
+
   portalLogin: async (payload: LoginPayload): Promise<LoginResponse> => {
     const response = await api.post('/auth/support/group/signin/via/email', payload);
     return response.data;
@@ -113,6 +126,11 @@ export const authService = {
 
   changePassword: async (payload: { oldPassword: string; password: string; confirmPassword: string }): Promise<{ success: boolean; message: string }> => {
     const response = await api.put('/user/update/profile/password', payload);
+    return response.data;
+  },
+
+  updateEmail: async (payload: { email: string }): Promise<{ success: boolean; message: string }> => {
+    const response = await api.put('/user/update/profile/email', payload);
     return response.data;
   },
 };
